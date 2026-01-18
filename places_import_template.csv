@@ -1,0 +1,5 @@
+name,category,subcategory,description,address,city,state,zip_code,phone,email,website,latitude,longitude,price_range,is_premium_listing,is_active
+"Popeyes Louisiana Kitchen",restaurant,fast-food,"Cajun-style fried chicken and seafood","123 Main St","Palatka",FL,32177,"386-555-0101",,"https://www.popeyes.com",29.6483,-81.6387,1,false,true
+"Taco Bell",restaurant,fast-food,"Tex-Mex fast food chain","456 Oak Ave","Palatka",FL,32177,"386-555-0102",,"https://www.tacobell.com",29.6500,-81.6400,1,false,true
+"Burger King",restaurant,fast-food,"Fast food burger chain","789 Pine St","Palatka",FL,32177,"386-555-0103",,"https://www.bk.com",29.6520,-81.6420,1,false,true
+"[Add more rows here - copy the format above]",restaurant,casual-dining,"[Description]","[Address]","[City]",FL,32177,"[Phone]","[Email]","[Website]",29.6500,-81.6400,2,false,true

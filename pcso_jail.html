@@ -1,0 +1,1896 @@
+
+<meta http-equiv="X-UA-Compatible" content="IE=8"/>
+<!doctype html >
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1">
+	<style type="text/css">
+		.InmateInfoGridTd
+		{
+			white-space: nowrap;
+            text-space-collapse:collapse;
+            column-gap: 0px;
+			/*width: auto;*/
+		}
+	</style>
+	<title>
+	JAIL View
+</title><link id="SiteCSS" rel="stylesheet" type="text/css" href="MainSO.css" /><link href="Print.css" rel="stylesheet" type="text/css" media="print" />
+	<script type="text/javascript" language="javascript" src="js/Main.js"></script>
+	<script type="text/javascript" language="javascript" src="js/jquery_1_9_1.js"></script>
+	<script type="text/javascript">
+
+	    var SearchVals = { FirstName: '', MiddleName: '', LastName: '', BeginBookDate: '', EndBookDate: '', BeginReleaseDate: '', EndReleaseDate: '', TypeJailSearch: 0, RecordsLoaded: 0, SortOption: 0, SortOrder: 0, IsDefault : true};
+
+		function LoadMoreResults() {
+		    $("#LoadMoreRow").hide();
+		    $("#PrintRow").hide();
+		    $("#upProgPnl").show();
+			//if we haven't intialized this, then this is the first more results set loaded
+			if (SearchVals.RecordsLoaded == 0)
+				SearchVals.RecordsLoaded = parseInt($("#ResultsReturned").text());
+
+			$.ajax({
+				type: "POST",
+				url: "Jail.aspx/AddMoreResults",
+				data: JSON.stringify(SearchVals),
+				contentType: "application/json; charset=utf-8",
+				dataType: "json",
+				success: function (msg) {
+					var data = msg.d.Data;
+					var jailInfoDiv = $("#JailInfo").children().children().first();
+					if (data.resultsReturned > 0) {
+					    jailInfoDiv.html(jailInfoDiv.html() + data.data);
+						SearchVals.RecordsLoaded += data.resultsReturned;
+						$("#lbGridInfo").text("Number of Inmate Records Returned: " + SearchVals.RecordsLoaded);
+
+						//we've hit the end of the results
+						if (data.resultsAttempted > data.resultsReturned)
+						    $("#LoadMoreRow").hide();
+						else
+						    $("#LoadMoreRow").show();
+					}
+					else {
+							$("#LoadMoreRow").hide();
+					}
+
+					
+					$("#upProgPnl").hide();
+					$("#PrintRow").show();
+				}
+			});
+		}
+
+		function LoadMoreMouseEnter() {
+		    $("#LoadMoreRow").css('background-color', 'rgb(192, 192, 192)');
+		}
+
+		function LoadMoreMouseLeave() {
+		    $("#LoadMoreRow").css('background-color', 'rgb(224, 224, 224)');
+		}
+
+
+		function SearchTypeSelect() {
+			var searchTypeDropDown = document.getElementById('TypeSearch');
+			var selected = searchTypeDropDown.options[searchTypeDropDown.selectedIndex].value;
+			var ReleaseBeginInput = document.getElementById('tbBeginReleaseDate');
+			var ReleaseBeginLabel = document.getElementById('BeginReleaseDateLabel');
+			var ReleaseEndInput = document.getElementById('tbEndReleaseDate');
+			var ReleaseEndLabel = document.getElementById('EndReleaseDateLabel');
+			switch (selected) {
+				case "0":
+					ReleaseBeginInput.style.display = "none";
+					ReleaseBeginInput.value = '';
+					ReleaseEndInput.style.display = "none";
+					ReleaseEndInput.value = '';
+					ReleaseBeginLabel.style.display = "none";
+					ReleaseEndLabel.style.display = "none";
+					break;
+				case "1":
+					ReleaseBeginInput.style.display = "block";
+					ReleaseEndInput.style.display = "block";
+					ReleaseBeginLabel.style.display = "block";
+					ReleaseEndLabel.style.display = "block";
+					break;
+				case "2":
+					ReleaseBeginInput.style.display = "block";
+					ReleaseEndInput.style.display = "block";
+					ReleaseBeginLabel.style.display = "block";
+					ReleaseEndLabel.style.display = "block";
+					break;
+			}
+		}
+		//takes the onclick from an expander element and expands the expanded element (or folds depending on the state)
+		function ToggleExpand(expanderID) {
+			var expandedID = "expanded" + expanderID.replace("expander", "");
+			//They are spelt similarly to keep you on your toes.
+			var expanderElement = document.getElementById(expanderID);
+			var expandedElement = document.getElementById(expandedID);
+
+			//toggle logic
+			if (expandedElement.style.display == "none") {
+				expandedElement.style.display = "table-cell";
+				expanderElement.innerHTML = "[-]";
+			}
+			else {
+				expandedElement.style.display = "none";
+				expanderElement.innerHTML = "[+]";
+			}
+		}
+		function printFrame(){
+		    this.focus();
+		    this.print();
+		}
+		
+		function PrintPreview() {
+		    if (SearchVals.RecordsLoaded == 0)
+		        SearchVals.RecordsLoaded = parseInt($("#ResultsReturned").text());
+		    var url = "Jail.aspx?preview=true&searchvalues=" + JSON.stringify(SearchVals);
+		    var win = window.open(url, "_blank");
+		    win.focus();
+		}
+	</script>
+<link href="/SmartWEBClient/WebResource.axd?d=q9I-yWXtV0PxPTAOUEHr6ubNvt1mPOWERnItkhvUj47dl_KCGEj46eoKRxq1RqfHR9uinA8CpL8NEPHqs5ENpgV5w_bfGV3YuVxd2IVD00foMRFBEkz5lfEqUCpa5vgCwB52y9T6RkjSvde3G_fJgvsn0fycZ0XI3cFYPU4TJ_w1&amp;t=637933974820000000" type="text/css" rel="stylesheet" /><link href="/SmartWEBClient/WebResource.axd?d=VofeIBuW8cHdpwZliY_Lbi-CRImoO-aUZnVPI4KZlaSx-WPCd4-OmsWQ4c-hWIQbNt2HAxUx-9aQKjmEa8XtRt8AB4WDQSbUYXjYenxyj_syysJEDhn2AG2MZ4APSLqciezY2YKYtKlyuyNtX3ZpKMVYgv83kT0U1YvlNqlfkpM1&amp;t=637933974820000000" type="text/css" rel="stylesheet" /></head>
+<body >
+	<form name="form1" method="post" action="./jail.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="form1">
+<div>
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKMjAyNDQzNDg4Mg9kFgICAQ9kFgICAg8WAh4EaHJlZgUKTWFpblNPLmNzc2RkYFZHcCai3jqUPZ+MSxFd24Z0QjS3ij/ALUGYR3C8HfE=" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/SmartWEBClient/WebResource.axd?d=ogSnci-0RVT4qHIBHlogmKRuwr8YfOGZ5YXH9N2R5xQnejI2KQ9GL3P3Oy6zHfXwybKzhrb4K5JNzLUYUTk2o7iEfr2_TVywf1J6a5wfDrw1&amp;t=638901392248157332" type="text/javascript"></script>
+
+
+<script src="/SmartWEBClient/ScriptResource.axd?d=cYBs7ndcSyui2s5rM0y_W8NumxfZqoBYHNwf3I14xzNu52jr5MWg9vFA6-GyVx3u6aEH_6SxD-1Wj5HGo3unwv2nbWbUeaeXcss9wh9Cef8QIrNktA7V77SpumXSfl-PXx4QNti6VmtojyzTDX4E6Xx_HjF-QS4So95xTaRGNMo1&amp;t=ffffffff93d1c106" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=91em5Qtbx1zjuNvMnqhhURT-I5JLUiXTmiNQfsp1d0gIBULsGjNjaNhsfBG8zAAV7KTAkNFkkZihniP39E-zsplY4tD8BslXHjw1BzqMhomHQotgHBpmLhZo-iPy1WJKYTMocCeN6LQr0qrt2IMwjHbJaBkEgnT0C2JKY3Dt-RQ1&amp;t=5c0e0825" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=oVHnuEWhWCzoQIOD2Ksc72jyEBtURqXmqkG44LJnmokDYZoDScr323WLOgV2jBbrBkdaPQbC2N1uW6cDNZSid3tMQjhaUh8HXxznWgx1u2uzZhkrrvWbG0Gq0ZR7IrXfvq1WvxFddUkBI8i_6VpGCFLQQ1RQv0orO0rXnTjbT4nPiTcB_qCnJCE1Acmckoxs0&amp;t=5c0e0825" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=tZ4I_vgDlBImov8hmvmXmhMRMOBLWopnwF41wG4BaNKy_VUHVTBr6DPl3HW6Mjhs1SnIX7oFdD3Ef6fU2rRur_nWqGvQEpNi0weKciZI-jVh_fekZ6sRbD1nZDVbHmWbH7GldxA3bWitKXN7jr-F1A2&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=0C4VCAy6Fv6OTlmQFgZP6PW4bQ3Rq-qZfXkiDH8jDDzuw6Zwihq3NjaT80x0cRo3qfPXYrX0u9j2QALwlMV0M34QN1ed9OR-dpI7B8V97u435g7hhP8ZOdlfA7mTi-7b0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=WCl0SYgnj0gLlXBPgHNBOq1WmO4bAETeY_KI-t6v6t1j20sJ-v4kpELcgMpMOq6e7BdzQE7SU6xlHEsR5GlZoAN0eExBj_D0uKs_qQgS7Vjl56n8AuCnnCrZBuxeTKRi0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=SWe_tojahQiq3kF5WslgDMhDFYDC-o0npVLqKYQPOnklIFrOOdgA53lCHH0JEsB-wye5ljl6_lf0uU7eU016hdluBIt8ZLqYWET1Rh4dBwQrANf51qitHDo-ilnS6SmE0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=N3o0DPzF4aHHqSYEnEQVzCLZHjfs3obyWDv8aLBpAxR-QIsYMDZjyj-ti5MnmcKSzk98oRpQZh7QbuDTfXByyFW9pPt7Hwoy-99tXl0v6YnH6xDdHTHc-b64643XAhup0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=TiimZiyARwCrTf58Chj7KmdwhwLgteh1W58TXsaPrUYJJ5RfHW-qaI0gsuAn08ep3oZHGT0gm5hmOmK-WvsyX4uVbXvjUKq3-qf0YldVQ26v38tYs7E_brA_Teo7gZLZtVqG40lIKGZqHixFY8uv-A2&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=fhEW_ko9wl-mZuV1WnjPHPaJtm8U_4CJeRlDxCt_kIWmi2RYD2-lNlX_5hI1utIOT39ZqAuCVLo5kbQzGQn_Hp6rymp-rx70pZqCFXkI6dKnS5l_OU43LXffW70hjvPm0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=jFkIhSYHe8BsKgEbOFyrYQvaApo1YhldtJup-0qWHCMBmcR1ovVosMo62_sEgIX3dZa-V03DZD8ej286-ocG_cUGXLDtYQpCoHInl987tRLtbSEzDAAg5Wz6b8lsspxL0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=9ejWzh8Qa8Zx8sV7iReIxIsXbbt3kVJ0uyAk2QlrfGBZqqc2bYWk-uxZzI7JYhaJ6NTLuQdwsyJZ0fWYqGfixaLAaGGQYpZx-XcwrwTCkQs8-MdnHH61zJ7A_YnqWkjk0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=5L_hEV89cqiEqHJvEc2YHSIeLgJOwpww_HPIbqI_X3HtbXWs0vBmRRs-4P31jonQi01q0MtYy_9kkO3RoK6Ki_k-KK-iJgGUeP4KtTaI6p36ZxvXceePcQZLxivOU4C9Tldc9xATRabRIJ0mBEnlFw2&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=O-xVanVzFBTjjokH_-XkyuRAhmutAoDYhvpO9VEqfGGZrmda6bZHnfzsgLhPES72TEO7C_SIFXegUcayYvBYrYM0XmI7HOtr-LRlk20s8SlotksphlNPRhp2WXjxv2oK0&amp;t=5e95cc64" type="text/javascript"></script>
+<script src="/SmartWEBClient/ScriptResource.axd?d=ROJ49dwXAyRfw7aYfI_wlTei4B9yMaJd_J5Q15GA0YJ4aZnOALxBqGrQSEWOlrnU7qwjBqxox8zP_ojFeqa_v9qM2JYfdwhb8eGf3hKAf7s2i5jQ8me6oPFQLtl6Pet0TVwV0XPEavYT9kZXTxprcQ2&amp;t=5e95cc64" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+var PageMethods = function() {
+PageMethods.initializeBase(this);
+this._timeout = 0;
+this._userContext = null;
+this._succeeded = null;
+this._failed = null;
+}
+PageMethods.prototype = {
+_get_path:function() {
+ var p = this.get_path();
+ if (p) return p;
+ else return PageMethods._staticInstance.get_path();},
+getRecordsToLoad:function(succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'getRecordsToLoad',false,{},succeededCallback,failedCallback,userContext); },
+AddMoreResults:function(FirstName,MiddleName,LastName,BeginBookDate,EndBookDate,BeginReleaseDate,EndReleaseDate,TypeJailSearch,RecordsLoaded,SortOption,SortOrder,IsDefault,succeededCallback, failedCallback, userContext) {
+return this._invoke(this._get_path(), 'AddMoreResults',false,{FirstName:FirstName,MiddleName:MiddleName,LastName:LastName,BeginBookDate:BeginBookDate,EndBookDate:EndBookDate,BeginReleaseDate:BeginReleaseDate,EndReleaseDate:EndReleaseDate,TypeJailSearch:TypeJailSearch,RecordsLoaded:RecordsLoaded,SortOption:SortOption,SortOrder:SortOrder,IsDefault:IsDefault},succeededCallback,failedCallback,userContext); }}
+PageMethods.registerClass('PageMethods',Sys.Net.WebServiceProxy);
+PageMethods._staticInstance = new PageMethods();
+PageMethods.set_path = function(value) { PageMethods._staticInstance.set_path(value); }
+PageMethods.get_path = function() { return PageMethods._staticInstance.get_path(); }
+PageMethods.set_timeout = function(value) { PageMethods._staticInstance.set_timeout(value); }
+PageMethods.get_timeout = function() { return PageMethods._staticInstance.get_timeout(); }
+PageMethods.set_defaultUserContext = function(value) { PageMethods._staticInstance.set_defaultUserContext(value); }
+PageMethods.get_defaultUserContext = function() { return PageMethods._staticInstance.get_defaultUserContext(); }
+PageMethods.set_defaultSucceededCallback = function(value) { PageMethods._staticInstance.set_defaultSucceededCallback(value); }
+PageMethods.get_defaultSucceededCallback = function() { return PageMethods._staticInstance.get_defaultSucceededCallback(); }
+PageMethods.set_defaultFailedCallback = function(value) { PageMethods._staticInstance.set_defaultFailedCallback(value); }
+PageMethods.get_defaultFailedCallback = function() { return PageMethods._staticInstance.get_defaultFailedCallback(); }
+PageMethods.set_enableJsonp = function(value) { PageMethods._staticInstance.set_enableJsonp(value); }
+PageMethods.get_enableJsonp = function() { return PageMethods._staticInstance.get_enableJsonp(); }
+PageMethods.set_jsonpCallbackParameter = function(value) { PageMethods._staticInstance.set_jsonpCallbackParameter(value); }
+PageMethods.get_jsonpCallbackParameter = function() { return PageMethods._staticInstance.get_jsonpCallbackParameter(); }
+PageMethods.set_path("jail.aspx");
+PageMethods.getRecordsToLoad= function(onSuccess,onFailed,userContext) {PageMethods._staticInstance.getRecordsToLoad(onSuccess,onFailed,userContext); }
+PageMethods.AddMoreResults= function(FirstName,MiddleName,LastName,BeginBookDate,EndBookDate,BeginReleaseDate,EndReleaseDate,TypeJailSearch,RecordsLoaded,SortOption,SortOrder,IsDefault,onSuccess,onFailed,userContext) {PageMethods._staticInstance.AddMoreResults(FirstName,MiddleName,LastName,BeginBookDate,EndBookDate,BeginReleaseDate,EndReleaseDate,TypeJailSearch,RecordsLoaded,SortOption,SortOrder,IsDefault,onSuccess,onFailed,userContext); }
+var gtc = Sys.Net.WebServiceProxy._generateTypedConstructor;
+Type.registerNamespace('System.Web.Mvc');
+if (typeof(System.Web.Mvc.JsonResult) === 'undefined') {
+System.Web.Mvc.JsonResult=gtc("System.Web.Mvc.JsonResult");
+System.Web.Mvc.JsonResult.registerClass('System.Web.Mvc.JsonResult');
+}
+function WebForm_OnSubmit() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+return true;
+}
+//]]>
+</script>
+
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="C8445BF0" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdABEyO9X3Auyy5hM3p3RMKFaJRG9+ljXShLjYxWLx290v8NluaX2nV8UsPHE/dE8FhRlF01gYhk5SAumWu7ZCgWKueKoqdLY1DpPECxREJPJxA9P9MCZiCJUHGUieiWIdrb8byguXpRsvZdgZ96xHi+OkCFGMsQvc8MLzFzGyNdKwywUTfedpFfQ1i0yz9mc45TqTiuf+MMBqgSKnoPeiyXAgnhdEH4+eeT8awoM60u5Aw72/qY39KiCq1GdNuHx1fYH2DpazwDJeTyPWN3cyyL0CAHKdxQrYrEakX7WsqqHOlivGnplKjcHkUTYTB9BVHRZ+Wu5NAZwvYVIvQ/Dr7QJvvw3YufIv3bEOmi52CSFAZhhADnctN1q/ssuloKBZky0pWjiPC5Jykr57qz+yjW7j" />
+</div>
+	<script type="text/javascript" language="javascript" src="js/ToolTipPopUp.js"></script>
+	<script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ScriptManager1', 'form1', ['tUpdatePanel2',''], ['btnSumit',''], [], 90, '');
+//]]>
+</script>
+
+	
+	<div id="Everything" class="">
+		<div id="Search" class="SearchDIV">
+            <div id="upProgPnl" style="display:none;">
+	
+			        <!--<DIV id="IMGDIV" align="center" valign="middle" style="position: absolute;left: 50%;top: 50%;visibility:visible;vertical-align:middle;background-color:White">-->
+			        <img id="imgProgress" src="images/preloader_01.gif" style="border-width:0px;" />
+			        <!--</DIV>-->
+		        
+</div>
+			<table id="Table1" border="0" cellpadding="0" width="100%">
+	<tr>
+		<td class="SearchHeader">
+						<center>
+							Search Inmates</center>
+					</td>
+	</tr>
+	<tr>
+		<td>
+						Last Name:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="txbLastName" type="text" id="txbLastName" />
+					</td>
+	</tr>
+	<tr>
+		<td>
+						First Name:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="txbFirstName" type="text" id="txbFirstName" />
+					</td>
+	</tr>
+	<tr>
+		<td>
+						Middle Name:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="txbMiddleName" type="text" id="txbMiddleName" />
+					</td>
+	</tr>
+	<tr>
+		<td>
+						Begin Booking Date:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="tbBeginDate" type="text" id="tbBeginDate" />
+						
+					</td>
+	</tr>
+	<tr>
+		<td>
+						End Booking Date:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="tbEndDate" type="text" id="tbEndDate" />
+						
+					</td>
+	</tr>
+	<tr>
+		<td id="BeginReleaseDateLabel" style="display: none;">
+						Begin Release Date:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="tbBeginReleaseDate" type="text" id="tbBeginReleaseDate" style="display: none;" />
+						
+					</td>
+	</tr>
+	<tr>
+		<td id="EndReleaseDateLabel" style="display: none;">
+						End Release Date:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input name="tbEndReleaseDate" type="text" id="tbEndReleaseDate" style="display: none;" />
+						
+					</td>
+	</tr>
+	<tr>
+		<td>
+						Search For:
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<select name="TypeSearch" id="TypeSearch" onChange="SearchTypeSelect();">
+			<option value="0">Current Inmates Only</option>
+			<option value="1">Released Inmates Only</option>
+			<option value="2">Both Current And Released</option>
+
+		</select>
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<table>
+							<tr>
+								<td style="width: 80px">
+									Sorted By:
+								</td>
+								<td>
+									<select name="SearchSortOption" id="SearchSortOption">
+			<option value="0">Name</option>
+			<option value="1">Booking Date</option>
+
+		</select>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									Order:
+								</td>
+								<td>
+									<select name="SearchOrderOption" id="SearchOrderOption">
+			<option value="0">Ascending</option>
+			<option value="1">Descending</option>
+
+		</select>
+								</td>
+							</tr>
+						</table>
+					</td>
+	</tr>
+	<tr>
+		<td>
+						<input type="submit" name="btnSumit" value="Submit" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;btnSumit&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="btnSumit" /><input type="submit" name="btnReset" value="Reset" id="btnReset" />
+					</td>
+	</tr>
+	<tr>
+		<td>
+						&nbsp;
+					</td>
+	</tr>
+	<tr>
+		<td>
+						&nbsp;
+					</td>
+	</tr>
+	<tr>
+		<td>
+					     
+					</td>
+	</tr>
+</table>
+
+		</div>
+        
+
+		
+        
+
+		<div id="grid" class="GridDIV">
+			<span id="UpdatePanel2">
+					<span id="ControlInput" style="color:Red;display:none;">Please fill in at least one search criteria.</span>
+					<center>
+						<span id="ResultsReturned" Value="0" style="display:none">7</span>
+						<span id="lbGridInfo" class="DivCountMsg">BOOKED Last 24 Hours</span></center>
+					</BR>
+					<br />
+                    <table >
+                        <tr>
+                            <td>
+                                <div id="JailInfo" >
+						        <table border="0" cellpadding="0" cellspacing="2" class="JailView">
+							        
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000160'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000160" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        ALBARRAN, EMETERIO
+															        &nbsp; (W/
+															        MALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000160
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO15MNI007252
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 07:56 PM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        34
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        NO BOND
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">110 BARKER LN CRESCENT CITY, FL 32112</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expanderea530bb6ede8443d8535bc4933726596" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        893.13.6a
+												        </td>
+												        <td nowrap="nowrap">
+													        231328CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        DRUGS-POSSESS
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expandedea530bb6ede8443d8535bc4933726596"style="display:none;text-align:left">CNTRL SUB WO PRESCRIPTION</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000158'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000158" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        BUTLER, DEREK TYLER
+															        &nbsp; (W/
+															        MALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000158
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO23MNI001109
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 04:28 PM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        32
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        NO BOND
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">227 MIRROR LAKE DRIVE INTERLACHEN, FL 32148</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expander1df7ce2dfd1c4a609d40244addabcfad" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        843.15.1b
+												        </td>
+												        <td nowrap="nowrap">
+													        250175MM (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        FAILURE TO APPEAR
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        M
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expanded1df7ce2dfd1c4a609d40244addabcfad"style="display:none;text-align:left">0</td></tr>
+											        </tr>
+										        
+											        <tr class="odd">
+												        <td nowrap="nowrap" id="expanderd56c20b72a7f4853a2203068d2011766" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        948.06
+												        </td>
+												        <td nowrap="nowrap">
+													        241377CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        PROB VIOLATION
+												        </td>
+												        <td nowrap="nowrap">
+													        N
+												        </td>
+												        <td nowrap="nowrap">
+													        N
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND
+                                                            <br></br>
+												        </td>
+														
+                                                        <tr><td class="odd" nowrap="nowrap" colspan="8" id="expandedd56c20b72a7f4853a2203068d2011766"style="display:none;text-align:left">0</td></tr>
+											        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expander5e63cdbf22ea41b28dd12ddc5065251a" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        812.014.2c6
+												        </td>
+												        <td nowrap="nowrap">
+													        250542CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        VEH THEFT
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expanded5e63cdbf22ea41b28dd12ddc5065251a"style="display:none;text-align:left">GRAND THEFT OF MOTOR VEHICLE</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000161'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000161" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        FULLER, WILLIAM HENRY
+															        &nbsp; (B/
+															        MALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000161
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO11MNI000790
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 08:18 PM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        44
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        NO BOND
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">206 NELLIE ST Palatka, FL</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expander1696e0c75d33406bb80b422a7fa54c91" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        893.135.1f1
+												        </td>
+												        <td nowrap="nowrap">
+													        240965CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        AMPHETAMINE-TRAFFIC
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expanded1696e0c75d33406bb80b422a7fa54c91"style="display:none;text-align:left">OR METHAMPHETAMINE 14 GRAMS OR OVER</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000162'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000162" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        KIRKLAND, WILLIAM WALLECH
+															        &nbsp; (B/
+															        MALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000162
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO03MNI016343
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 08:39 PM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        53
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        NO BOND
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">2525 SILVER LAKE DR PALATKA, FL 32177</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expander0296643cfaf04772855023bdf2eb8687" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        322.34.5
+												        </td>
+												        <td nowrap="nowrap">
+													        251167CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        MOVING TRAFFIC VIOL
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expanded0296643cfaf04772855023bdf2eb8687"style="display:none;text-align:left">DRIVE WHILE LIC SUSP HABITUAL OFFENDER</td></tr>
+											        </tr>
+										        
+											        <tr class="odd">
+												        <td nowrap="nowrap" id="expander6c840f8e1c3a42fd901c7cd56bec48c1" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        893.13.6a
+												        </td>
+												        <td nowrap="nowrap">
+													        251167CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        MARIJUANA-POSSESS
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND
+                                                            <br></br>
+												        </td>
+														
+                                                        <tr><td class="odd" nowrap="nowrap" colspan="8" id="expanded6c840f8e1c3a42fd901c7cd56bec48c1"style="display:none;text-align:left">POSSESS MARIJUANA OVER 20 GRAMS</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000155'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000155" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        LEWIS, MONTRELL DONTAE
+															        &nbsp; (B/
+															        MALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000155
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO03MNI507265
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 12:51 AM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        33
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        $0.00
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">121 RABBIT TRACK RD SATSUMA, FL 32189</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewHolds" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+																<tr>
+															        <td class="SearchHeader" colspan="6">
+																        HOLDS
+															        </td>
+														        </tr>
+																
+												
+													<tr>
+														
+														<td nowrap="nowrap" >
+															TABLET
+														</td>
+													</tr>
+												
+                                                    </table></BR></BR></BR></td></tr>
+											    
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expanderc56a93e62c3e4973bbc0d4b35c26870a" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        316.1935.3a
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        FLEE/ELUDE POLICE
+												        </td>
+												        <td nowrap="nowrap">
+													        S
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $50000.00</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expandedc56a93e62c3e4973bbc0d4b35c26870a"style="display:none;text-align:left">FLEE W DISREGARD OF SAFETY TO PERSONS OR PROP</td></tr>
+											        </tr>
+										        
+											        <tr class="odd">
+												        <td nowrap="nowrap" id="expanderdff1f7a7e26348aa8c47ca9a889dac97" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        827.03.2d
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        NEGLECT CHILD
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $10000.00
+                                                            <br></br>
+												        </td>
+														
+                                                        <tr><td class="odd" nowrap="nowrap" colspan="8" id="expandeddff1f7a7e26348aa8c47ca9a889dac97"style="display:none;text-align:left">NEGLECT CHILD WITHOUT GREAT BODILY HARM</td></tr>
+											        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expander9d19749652714bb6a8ae72389d649154" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        827.03.2d
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        NEGLECT CHILD
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $10000.00</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expanded9d19749652714bb6a8ae72389d649154"style="display:none;text-align:left">NEGLECT CHILD WITHOUT GREAT BODILY HARM</td></tr>
+											        </tr>
+										        
+											        <tr class="odd">
+												        <td nowrap="nowrap" id="expander95db736ea65d4b0a85b83cb195a848fb" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        893.13.1a2
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        MARIJUANA-POSSESS
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $2500.00
+                                                            <br></br>
+												        </td>
+														
+                                                        <tr><td class="odd" nowrap="nowrap" colspan="8" id="expanded95db736ea65d4b0a85b83cb195a848fb"style="display:none;text-align:left">WITH INTENT TO SELL MFG OR DELIVER SCHEDULE I</td></tr>
+											        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expander5241a86b4f22464792dc277284a3e811" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        893.1351.1
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        DRUGS-SELL
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $2500.00</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expanded5241a86b4f22464792dc277284a3e811"style="display:none;text-align:left">OWN RENT STRUCTURE VEH KNOW SELL DRUGS</td></tr>
+											        </tr>
+										        
+											        <tr class="odd">
+												        <td nowrap="nowrap" id="expander027a219a76b841a38a0454031f855b6c" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        316.193.4
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        DUI-UNLAW BLD ALCH
+												        </td>
+												        <td nowrap="nowrap">
+													        S
+												        </td>
+												        <td nowrap="nowrap">
+													        M
+												        </td>
+												        <td nowrap="nowrap">
+													        $1500.00
+                                                            <br></br>
+												        </td>
+														
+                                                        <tr><td class="odd" nowrap="nowrap" colspan="8" id="expanded027a219a76b841a38a0454031f855b6c"style="display:none;text-align:left">0.15 OR HIGHER OR W PERSON UNDER 18 IN VEHICLE</td></tr>
+											        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expanderc3ce763a563e411da35cf3ac61b4239c" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        893.135.1c3
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        DRUGS-TRAFFIC
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $150000.00</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expandedc3ce763a563e411da35cf3ac61b4239c"style="display:none;text-align:left">TRAFFICKING IN OXYCODONE 7 GRAMS OR MORE</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000156'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000156" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        MIMS, SANAE YVONNE
+															        &nbsp; (B/
+															        FEMALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000156
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO17MNI002198
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 02:24 AM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        20
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        $0.00
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">730 GROVE AVE CRESCENT CITY, FL 32112</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewHolds" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+																<tr>
+															        <td class="SearchHeader" colspan="6">
+																        HOLDS
+															        </td>
+														        </tr>
+																
+												
+													<tr>
+														
+														<td nowrap="nowrap" >
+															TABLET
+														</td>
+													</tr>
+												
+                                                    </table></BR></BR></BR></td></tr>
+											    
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expanderf7082f51ce964e30b21aa043d1420512" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        827.03.2c
+												        </td>
+												        <td nowrap="nowrap">
+													        0 (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        CRUELTY TOWARD CHILD
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        $25000.00</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expandedf7082f51ce964e30b21aa043d1420512"style="display:none;text-align:left">ABUSE CHILD WITHOUT GREAT BODILY HARM</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+									        <tr style="InmateRecordRow">
+										        <td nowrap="nowrap" width="2%">
+                                                    <img src='ViewImage.aspx?bookno=PCSO26JBN000159'><BR><a href="ViewImageFull.aspx?bookno=PCSO26JBN000159" target='blank'>Enlarge Photo</a>
+	                                                
+										        </td>
+										        <td nowrap="nowrap" valign="top">
+											        <table border="0" cellpadding="1" cellspacing="0" width="100%">
+												        <thead>
+													        <tr>
+														        <td class="SearchHeader" colspan="4">
+															        RAMIREZ, RAMON
+															        &nbsp; (W/
+															        MALE
+															        
+																	
+															        )
+														        </td>
+													        </tr>
+												        </thead>
+												        <tbody>
+													        <tr>
+														        <td class="InmateInfoGridTd" style="">
+															        Status:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        In Jail
+														        </td>
+														        
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Booking No:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO26JBN000159
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        MniNo:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        PCSO23MNI000115
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Booking Date:
+														        </td>
+                                                                <td class="InmateInfoGridTd">01/15/2026 04:26 PM</td>
+														        
+													        </tr>
+													        <tr class="oddNoWidth">
+														        <td class="InmateInfoGridTd">
+															        Age On Booking Date:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        60
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+														        <td class="InmateInfoGridTd">
+														        </td>
+													        </tr>
+													        <tr>
+														        <td class="InmateInfoGridTd">
+															        Bond Amount:
+														        </td>
+														        <td class="InmateInfoGridTd">
+															        NO BOND
+														        </td>
+																
+																<td class="InmateInfoGridTd" colspan="2"></td>
+																
+													        </tr>
+													        <tr class="oddNoWidth">
+														        
+														
+													        </tr>
+													        <tr class="oddNoWidth"><td class="InmateInfoGridTd" nowrap="nowrap" width="2%">Address Given:</td><td colspan="3" style="min-width: 500px;" class="InmateInfoGridTd">102 APACHE AVE INTERLACHEN, FL 32148</td></tr>
+												        </tbody>
+											        </table>
+										        </td>
+									        </tr>
+											<tr class="InmateRecordSeperater" ></tr>
+											
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewHolds" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+																<tr>
+															        <td class="SearchHeader" colspan="6">
+																        HOLDS
+															        </td>
+														        </tr>
+																
+												
+													<tr>
+														
+														<td nowrap="nowrap" >
+															DOC
+														</td>
+													</tr>
+												
+                                                    </table></BR></BR></BR></td></tr>
+											    
+									        <tr class="InmateRecordSeperater" ></tr>
+									        
+											        <tr>
+												        <td colspan="2" valign="top">
+													        <table class="JailViewCharges" id="JailViewCharges" border="0" cellpadding="2" cellspacing="0"
+														        width="100%">
+														        <tr>
+															        <td class="SearchHeader" colspan="6">
+																        CHARGES
+															        </td>
+														        </tr>
+														        <tr class="SearchHeader">
+															        <td>
+															        </td>
+															        <td>
+																        STATUTE
+															        </td>
+															        <td>
+																        COURT CASE NUMBER
+															        </td>
+															        <td>
+																        CHARGE
+															        </td>
+															        <td>
+																        DEGREE
+															        </td>
+															        <td>
+																        LEVEL
+															        </td>
+															        <td>
+																        BOND
+															        </td>
+																	
+														        </tr>
+										        
+											        <tr>
+												        <td nowrap="nowrap" id="expanderc427fb644a9042e58a5de57480ee1af5" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        812.014.3c
+												        </td>
+												        <td nowrap="nowrap">
+													        251079CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        LARC
+												        </td>
+												        <td nowrap="nowrap">
+													        T
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND</br>
+												        </td>
+														<tr><td nowrap="nowrap" colspan="8" id="expandedc427fb644a9042e58a5de57480ee1af5"style="display:none;text-align:left">PETIT THEFT 2ND DEGREE 3RD SUBSQ OFFENSE</td></tr>
+											        </tr>
+										        
+											        <tr class="odd">
+												        <td nowrap="nowrap" id="expanderca5797773c16459cbabcfbc6997d7059" onclick="ToggleExpand(this.id)">[+]</td>
+												        <td nowrap="nowrap">
+													        790.23.1a
+												        </td>
+												        <td nowrap="nowrap">
+													        251079CF (PUTNAM COUNTY SHERIFF)
+												        </td>
+												        <td nowrap="nowrap">
+													        POSSESSION OF WEAPON
+												        </td>
+												        <td nowrap="nowrap">
+													        S
+												        </td>
+												        <td nowrap="nowrap">
+													        F
+												        </td>
+												        <td nowrap="nowrap">
+													        NO BOND
+                                                            <br></br>
+												        </td>
+														
+                                                        <tr><td class="odd" nowrap="nowrap" colspan="8" id="expandedca5797773c16459cbabcfbc6997d7059"style="display:none;text-align:left">OR AMMO BY CONVICTED FLA FELON</td></tr>
+											        </tr>
+										        
+                                                    </table></BR></BR></BR></td></tr>
+											    
+								        
+								        
+						        </table>
+		                        </div>
+                            </td>
+                        </tr>
+                        <tr id="LoadMoreRow" class="LoadMoreRow">
+                            <td style="height:35px;">
+                                <div id="LoadMoreButton" class="LoadMoreButton" onclick="LoadMoreResults()" onmouseover="LoadMoreMouseEnter()" onmouseout="LoadMoreMouseLeave()">
+                                     <p>Load more results<p>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="PrintRow" class="noPrint">
+                            <td style="width:100px;">
+                                <center><a id="PrintLink" class="noPrint" href="javascript:PrintPreview();" >Print</a></center>
+                            </td>
+                        </tr>
+                    </table>
+                </span>
+            </div>
+        
+        <div style="font-size: 6pt;float: right;position: fixed;bottom: 20px;">
+            <div style="font-size: 8pt;">
+	            Contact: &amp;amp;amp;amp;nbsp;
+            </div>
+            <a href="http://cts-america.com" title="http://cts-america.com" class="logo" target="_blank">
+				<img id="CTSLogo" src="images/SmartCOP%20horizontal-01.png" style="border-width:0px;" />
+			</a>
+			<div style="font-size: 6pt;bottom: 0;">Version:3.0.1.11</div>
+        </div>
+		
+		
+		<div style="margin-top: 10px;margin-right: 0px; position: fixed; right: 10px;" class="noPrint">
+			
+		</div>
+		
+        
+        </div>
+            
+					
+	
+<script type="text/javascript">
+//<![CDATA[
+var Page_Validators =  new Array(document.getElementById("ControlInput"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var ControlInput = document.all ? document.all["ControlInput"] : document.getElementById("ControlInput");
+ControlInput.errormessage = "Please Fill In At Least One Search Criteria.";
+ControlInput.display = "Dynamic";
+ControlInput.evaluationfunction = "CustomValidatorEvaluateIsValid";
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        Sys.Application.add_init(function() {
+    $create(Sys.UI._UpdateProgress, {"associatedUpdatePanelId":null,"displayAfter":100,"dynamicLayout":true}, null, null, $get("upProgPnl"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.CalendarBehavior, {"id":"dtBeginDate"}, {"dateSelectionChanged":focus}, null, $get("tbBeginDate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.CalendarBehavior, {"id":"dtEndDate"}, {"dateSelectionChanged":focus}, null, $get("tbEndDate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.CalendarBehavior, {"id":"dtBeginReleaseDate"}, null, null, $get("tbBeginReleaseDate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.CalendarBehavior, {"id":"dtEndReleaseDate"}, null, null, $get("tbEndReleaseDate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.Animation.UpdatePanelAnimationBehavior, {"id":"upPE2","onUpdated":"{\"AnimationName\":\"Sequence\",\"AnimationChildren\":[{\"AnimationName\":\"Parallel\",\"duration\":\".20\",\"Fps\":\"30\",\"AnimationChildren\":[{\"AnimationName\":\"FadeIn\",\"minimumOpacity\":\"0.2\",\"TargetScript\":\"$get(\\u0027UpdatePanel2\\u0027)\",\"AnimationChildren\":[]}]}]}","onUpdating":"{\"AnimationName\":\"Sequence\",\"AnimationChildren\":[{\"AnimationName\":\"Parallel\",\"duration\":\".20\",\"Fps\":\"30\",\"AnimationChildren\":[{\"AnimationName\":\"FadeOut\",\"minimumOpacity\":\"0.2\",\"TargetScript\":\"$get(\\u0027UpdatePanel2\\u0027)\",\"AnimationChildren\":[]}]}]}","triggerControlsClientID":["btnSumit"],"updatePanelClientID":"UpdatePanel2","updatePanelID":"UpdatePanel2"}, null, null, $get("UpdatePanel2"));
+});
+
+document.getElementById('ControlInput').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ControlInput'));
+}
+//]]>
+</script>
+</form>
+	<script type="text/javascript">
+
+		function UpdateFinished(sender, args) {
+			$.ajax({
+				type: "POST",
+				url: "Jail.aspx/getRecordsToLoad",
+				data: JSON.stringify(SearchVals),
+				contentType: "application/json; charset=utf-8",
+				dataType: "json",
+				success: function (msg) {
+				    if ($("#ResultsReturned").html() < msg.d)
+				    {
+				        $("#LoadMoreRow").hide();
+				    }
+				    else {
+				        $("#LoadMoreRow").show();
+
+				    }
+				    if ($("#ResultsReturned").html() > 0) {
+				        if ($("#SiteCSS").val != "Print.css") {
+				            $("#PrintRow").show();
+				        }
+				    }
+				    else
+				    {
+				        $("#PrintRow").hide();
+				    }
+				}
+			});
+		}
+
+		Sys.WebForms.PageRequestManager.getInstance().add_pageLoaded(UpdateFinished);
+
+		var originalClick = $("[name='btnSumit']")[0].onclick;
+		$("[name='btnSumit']")[0].onclick = null;
+
+		$("[name='btnSumit']").click(function (eventData, eventObject) {
+			SearchVals.LastName = $("#txbLastName").val();
+			SearchVals.FirstName = $("#txbFirstName").val();
+			SearchVals.MiddleName = $("#txbMiddleName").val();
+			SearchVals.BeginBookDate = $("#tbBeginDate").val();
+			SearchVals.EndBookDate = $("#tbEndDate").val();
+			SearchVals.BeginReleaseDate = $("#tbBeginReleaseDate").val();
+			SearchVals.EndReleaseDate = $("#tbEndReleaseDate").val();
+			if ($("#TypeSearch").val() != null)
+				SearchVals.TypeJailSearch = $("#TypeSearch").val();
+			else 
+				SearchVals.TypeJailSearch = 0;
+			SearchVals.SortOption = $("#SearchSortOption").val();
+			SearchVals.SortOrder = $("#SearchOrderOption").val();
+			SearchVals.RecordsLoaded = 0;
+		    SearchVals.IsDefault = false;
+			originalClick(eventData, eventObject);
+		});
+	</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# Environment Variables - NEVER commit these!
+assets/.env
+.env
+*.env
+.env.local
+.env.*.local
+
+# Build files
+build/
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tempData/
+temp_*/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Coverage
+coverage/
+*.coverage
