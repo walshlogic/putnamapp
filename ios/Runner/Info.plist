@@ -49,12 +49,6 @@
 	<string>Putnam App needs your location to show nearby places and provide location-based services.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Putnam App needs your location to show nearby places and provide location-based services.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Putnam App needs local network access for debugging and development.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_dartobservatory._tcp</string>
-	</array>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-2965747653429801~6964866156</string>
 	<key>SKAdNetworkItems</key>

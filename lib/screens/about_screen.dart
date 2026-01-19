@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../config/route_paths.dart';
 import '../theme/app_theme.dart';
 import '../widgets/putnam_app_bar.dart';
@@ -195,20 +196,33 @@ class AboutScreen extends ConsumerWidget {
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(
-                          'VERSION',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          '0.8.2',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: appColors.primaryPurple),
-                        ),
-                      ],
+                    child: Center(
+                      child: FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder:
+                            (
+                              BuildContext context,
+                              AsyncSnapshot<PackageInfo> snapshot,
+                            ) {
+                              final textStyle = Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: appColors.primaryPurple);
+                              if (!snapshot.hasData) {
+                                return Text(
+                                  'Version -- | Build --',
+                                  style: textStyle,
+                                  textAlign: TextAlign.center,
+                                );
+                              }
+                              final info = snapshot.data!;
+                              return Text(
+                                'Version ${info.version} | Build ${info.buildNumber}',
+                                style: textStyle,
+                                textAlign: TextAlign.center,
+                              );
+                            },
+                      ),
                     ),
                   ),
                 ),

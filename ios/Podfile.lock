@@ -12,6 +12,8 @@ PODS:
     - Google-Mobile-Ads-SDK (~> 11.13.0)
     - webview_flutter_wkwebview
   - GoogleUserMessagingPlatform (3.1.0)
+  - package_info_plus (0.4.5):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -43,6 +45,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
   - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
@@ -68,6 +71,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/geolocator_apple/darwin"
   google_mobile_ads:
     :path: ".symlinks/plugins/google_mobile_ads/ios"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   purchases_flutter:
@@ -88,6 +93,7 @@ SPEC CHECKSUMS:
   Google-Mobile-Ads-SDK: 14f57f2dc33532a24db288897e26494640810407
   google_mobile_ads: 16ad301354fa6a7ea55770c6254bd4339bf8558b
   GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   purchases_flutter: 3570127ba41583a75e553d68a763367007830eff
   purchases_ui_flutter: 4f73ee267b1f50f72f71ece0d918fc5d0cb7f97f

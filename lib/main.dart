@@ -223,10 +223,10 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const Text(
-                      'The PutnamApp collects data from various public sources. '
-                      'This data may be incomplete, erroneous, misleading, or otherwise inaccurate. '
-                      'DO NOT MAKE DECISIONS BASED UPON INFORMATION YOU FIND ON THIS APP. '
-                      'Do your own research elsewhere before taking any actions.',
+                      'PutnamApp is provided for informational purposes only and displays data from public sources. '
+                      'We make no warranties about accuracy, completeness, or timeliness, and errors may occur. '
+                      'Do not rely on this app as your sole source of truth and do not make decisions based on it. '
+                      'You are responsible for independently verifying information before taking any action, and you assume all risk in relying on this information.',
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -299,8 +299,10 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
         if (!_ackDialogShown) {
           _ackDialogShown = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _showAcknowledgementDialog(context);
+            final navContext =
+                _router?.routerDelegate.navigatorKey.currentContext;
+            if (mounted && navContext != null) {
+              _showAcknowledgementDialog(navContext);
             }
           });
         }
