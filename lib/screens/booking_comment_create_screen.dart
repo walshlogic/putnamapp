@@ -7,10 +7,7 @@ import '../providers/booking_comment_providers.dart';
 import '../widgets/putnam_app_bar.dart';
 
 class BookingCommentCreateScreen extends ConsumerStatefulWidget {
-  const BookingCommentCreateScreen({
-    required this.booking,
-    super.key,
-  });
+  const BookingCommentCreateScreen({required this.booking, super.key});
 
   final JailBooking booking;
 
@@ -56,9 +53,9 @@ class _BookingCommentCreateScreenState
         _isSaving = false;
         _errorText = 'Failed to save comment. Please try again.';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add comment: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to add comment: $e')));
     }
   }
 
@@ -73,21 +70,22 @@ class _BookingCommentCreateScreenState
           Text(
             'ADD COMMENT',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: appColors.textDark,
-                ),
+              fontWeight: FontWeight.w700,
+              color: appColors.textDark,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             widget.booking.name.toUpperCase(),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: appColors.textLight,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: appColors.textLight),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
             maxLines: 6,
+            textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Write your comment...',
               errorText: _errorText,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,10 +19,7 @@ import '../widgets/settings_drawer.dart';
 
 /// Detailed view of a place with reviews and tier-based access
 class PlaceDetailScreen extends ConsumerWidget {
-  const PlaceDetailScreen({
-    required this.place,
-    super.key,
-  });
+  const PlaceDetailScreen({required this.place, super.key});
 
   final Place place;
 
@@ -65,7 +63,9 @@ class PlaceDetailScreen extends ConsumerWidget {
                               gradient: LinearGradient(
                                 colors: <Color>[
                                   appColors.accentTeal.withValues(alpha: 0.75),
-                                  appColors.accentTealDark.withValues(alpha: 0.75),
+                                  appColors.accentTealDark.withValues(
+                                    alpha: 0.75,
+                                  ),
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -197,9 +197,8 @@ class PlaceDetailScreen extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Text('Error loading profile: $error'),
-              ),
+              error: (error, stack) =>
+                  Center(child: Text('Error loading profile: $error')),
             ),
           ),
           const AppFooter(),
@@ -252,10 +251,7 @@ class PlaceDetailScreen extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[
-            appColors.accentTeal,
-            appColors.accentTealDark,
-          ],
+          colors: <Color>[appColors.accentTeal, appColors.accentTealDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -283,7 +279,8 @@ class PlaceDetailScreen extends ConsumerWidget {
           label: 'Website',
           onTap: () => _launchUrl(place.website!),
         ),
-      if (place.address != null || (place.latitude != null && place.longitude != null))
+      if (place.address != null ||
+          (place.latitude != null && place.longitude != null))
         _buildActionButton(
           appColors,
           icon: Icons.map,
@@ -298,11 +295,7 @@ class PlaceDetailScreen extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: actions,
-      ),
+      child: Wrap(spacing: 10, runSpacing: 10, children: actions),
     );
   }
 
@@ -339,7 +332,9 @@ class PlaceDetailScreen extends ConsumerWidget {
     } else {
       query = Uri.encodeComponent(place.fullAddress);
     }
-    final url = 'https://www.google.com/maps/search/?api=1&query=$query';
+    final url = defaultTargetPlatform == TargetPlatform.iOS
+        ? 'maps://?q=$query'
+        : 'https://www.google.com/maps/search/?api=1&query=$query';
     _launchUrl(url);
   }
 
@@ -441,7 +436,11 @@ class PlaceDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildReviewCard(BuildContext context, dynamic appColors, Review review) {
+  Widget _buildReviewCard(
+    BuildContext context,
+    dynamic appColors,
+    Review review,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -454,20 +453,19 @@ class PlaceDetailScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Text(
-                  review.isAnonymous ? 'Anonymous' : (review.userName ?? 'Anonymous'),
+                  review.isAnonymous
+                      ? 'Anonymous'
+                      : (review.userName ?? 'Anonymous'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: appColors.textDark,
                   ),
                 ),
-                StarRatingDisplay(
-                  rating: review.rating.toDouble(),
-                  size: 14,
-                ),
+                StarRatingDisplay(rating: review.rating.toDouble(), size: 14),
               ],
             ),
-            
+
             // Title (if exists)
             if (review.title != null) ...[
               const SizedBox(height: 8),
@@ -480,7 +478,7 @@ class PlaceDetailScreen extends ConsumerWidget {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 8),
             // Comment
             Text(
@@ -495,10 +493,7 @@ class PlaceDetailScreen extends ConsumerWidget {
             // Date
             Text(
               review.timeAgo,
-              style: TextStyle(
-                fontSize: 12,
-                color: appColors.textLight,
-              ),
+              style: TextStyle(fontSize: 12, color: appColors.textLight),
             ),
           ],
         ),
@@ -512,10 +507,7 @@ class PlaceDetailScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         child: Text(
           'No reviews yet. Be the first to review!',
-          style: TextStyle(
-            fontSize: 14,
-            color: appColors.textLight,
-          ),
+          style: TextStyle(fontSize: 14, color: appColors.textLight),
           textAlign: TextAlign.center,
         ),
       ),
@@ -540,15 +532,13 @@ class PlaceDetailScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: appColors.primaryPurple.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: appColors.primaryPurple.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: <Widget>[
-          Icon(
-            Icons.lock_outline,
-            size: 48,
-            color: appColors.primaryPurple,
-          ),
+          Icon(Icons.lock_outline, size: 48, color: appColors.primaryPurple),
           const SizedBox(height: 16),
           Text(
             '🔒 ${reviewCount > 0 ? "$reviewCount people reviewed this place" : "Reviews Locked"}',
@@ -562,10 +552,7 @@ class PlaceDetailScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             'See what your neighbors are saying about this place',
-            style: TextStyle(
-              fontSize: 14,
-              color: appColors.textMedium,
-            ),
+            style: TextStyle(fontSize: 14, color: appColors.textMedium),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -583,10 +570,7 @@ class PlaceDetailScreen extends ConsumerWidget {
               ),
               child: const Text(
                 'Upgrade to Silver to Read Reviews',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -601,10 +585,7 @@ class PlaceDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[
-            Colors.amber.shade50,
-            Colors.orange.shade50,
-          ],
+          colors: <Color>[Colors.amber.shade50, Colors.orange.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -613,11 +594,7 @@ class PlaceDetailScreen extends ConsumerWidget {
       ),
       child: Column(
         children: <Widget>[
-          Icon(
-            Icons.edit_note,
-            size: 40,
-            color: Colors.amber.shade700,
-          ),
+          Icon(Icons.edit_note, size: 40, color: Colors.amber.shade700),
           const SizedBox(height: 12),
           Text(
             '✍️ Want to share your experience?',
@@ -631,10 +608,7 @@ class PlaceDetailScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Upgrade to Gold to write reviews and upload photos',
-            style: TextStyle(
-              fontSize: 13,
-              color: appColors.textMedium,
-            ),
+            style: TextStyle(fontSize: 13, color: appColors.textMedium),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -652,10 +626,7 @@ class PlaceDetailScreen extends ConsumerWidget {
               ),
               child: const Text(
                 'Upgrade to Gold - Write Reviews',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -675,23 +646,18 @@ class PlaceDetailScreen extends ConsumerWidget {
         icon: const Icon(Icons.rate_review),
         label: const Text(
           'Write a Review',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: appColors.accentTeal,
           foregroundColor: appColors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     );
   }
-  
+
   void _showWriteReviewDialog(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -707,12 +673,12 @@ class PlaceDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _launchUrl(String urlString) async {
-    final Uri url = Uri.parse(urlString.startsWith('http')
-        ? urlString
-        : 'https://$urlString');
+    final Uri parsedUrl = Uri.parse(urlString);
+    final Uri url = parsedUrl.hasScheme
+        ? parsedUrl
+        : Uri.parse('https://$urlString');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     }
   }
 }
-

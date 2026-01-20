@@ -288,6 +288,17 @@ class BookingDetailScreen extends ConsumerWidget {
 
                 if (booking.addressGiven.isNotEmpty) const SizedBox(height: 12),
 
+                _buildCommentsCard(
+                  context,
+                  ref,
+                  commentsAsync,
+                  isLoggedIn,
+                  booking,
+                  bookingHistory,
+                ),
+
+                const SizedBox(height: 12),
+
                 // Booking Details Card
                 _buildSectionCard(
                   context,
@@ -327,67 +338,6 @@ class BookingDetailScreen extends ConsumerWidget {
                         '${booking.releasedDate!.month}/${booking.releasedDate!.day}/${booking.releasedDate!.year}',
                       ),
                     ],
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // Comments Card
-                _buildSectionCard(
-                  context,
-                  icon: Icons.forum_outlined,
-                  title: 'COMMENTS',
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        commentsAsync.when(
-                          data: (comments) => Text(
-                            '${comments.length}',
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(color: appColors.primaryPurple),
-                          ),
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                        ),
-                        TextButton.icon(
-                          onPressed: () {
-                            if (!isLoggedIn) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please sign in to leave a comment.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            _openAddCommentScreen(context, ref, booking);
-                          },
-                          icon: const Icon(Icons.add_comment_outlined, size: 18),
-                          label: const Text('ADD COMMENT'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    commentsAsync.when(
-                      data: (comments) => _buildCommentsList(
-                        context,
-                        appColors,
-                        comments,
-                        bookingHistory,
-                      ),
-                      loading: () => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      error: (error, _) => Text(
-                        'Unable to load comments: $error',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
                   ],
                 ),
 
@@ -682,6 +632,121 @@ class BookingDetailScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  Widget _buildCommentsCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<BookingComment>> commentsAsync,
+    bool isLoggedIn,
+    JailBooking booking,
+    List<JailBooking>? bookingHistory,
+  ) {
+    final styles = context.detailScreenStyles;
+    final appColors = context.appColors;
+    final bool hasComments = commentsAsync.maybeWhen(
+      data: (comments) => comments.isNotEmpty,
+      orElse: () => false,
+    );
+
+    final header = Row(
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: appColors.lightPurple,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.forum_outlined,
+            color: appColors.primaryPurple,
+            size: styles.sectionIconSize,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'COMMENTS',
+            style: TextStyle(
+              fontSize: styles.sectionTitleSize,
+              fontWeight: FontWeight.w600,
+              color: appColors.textDark,
+            ),
+          ),
+        ),
+        commentsAsync.when(
+          data: (comments) => Text(
+            '${comments.length}',
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: appColors.primaryPurple),
+          ),
+          loading: () => Text(
+            '...',
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: appColors.primaryPurple),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+        const SizedBox(width: 8),
+        TextButton.icon(
+          onPressed: () {
+            if (!isLoggedIn) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please sign in to leave a comment.'),
+                ),
+              );
+              return;
+            }
+            _openAddCommentScreen(context, ref, booking);
+          },
+          icon: const Icon(Icons.add_comment_outlined, size: 18),
+          label: const Text('ADD'),
+        ),
+      ],
+    );
+
+    if (!hasComments) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: header,
+        ),
+      );
+    }
+
+    return Card(
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.all(20),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        title: header,
+        children: <Widget>[
+          const SizedBox(height: 12),
+          commentsAsync.when(
+            data: (comments) => _buildCommentsList(
+              context,
+              appColors,
+              comments,
+              bookingHistory,
+            ),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (error, _) => Text(
+              'Unable to load comments: $error',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCommentsList(
