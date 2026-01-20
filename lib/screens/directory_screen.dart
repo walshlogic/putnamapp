@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/route_paths.dart';
 import '../extensions/build_context_extensions.dart';
 import '../models/place.dart';
+import '../providers/directory_providers.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_footer.dart';
 import '../widgets/putnam_app_bar.dart';
+import '../widgets/reviews/star_rating_display.dart';
 import '../widgets/settings_drawer.dart';
 
 /// Local Directory screen - main hub for discovering local places
@@ -33,6 +36,10 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final padding = context.responsivePadding;
+    final String trimmedQuery = _searchQuery.trim();
+    final searchAsync = trimmedQuery.isNotEmpty
+        ? ref.watch(searchPlacesProvider(trimmedQuery))
+        : const AsyncValue.data(<Place>[]);
 
     return Scaffold(
       appBar: const PutnamAppBar(showBackButton: true),
@@ -45,131 +52,188 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
               context,
               ListView(
                 padding: padding,
-              children: <Widget>[
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: <Color>[
-                        appColors.accentTeal,
-                        appColors.accentTealDark,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                children: <Widget>[
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: <Color>[
+                          appColors.accentTeal,
+                          appColors.accentTealDark,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.location_on,
-                            color: appColors.white,
-                            size: 32,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  'LOCAL PLACES',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: appColors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Discover Putnam County',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: appColors.white.withValues(
-                                      alpha: 0.9,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.location_on,
+                              color: appColors.white,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    'LOCAL PLACES',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: appColors.white,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Discover Putnam County',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: appColors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Search Bar
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    textCapitalization: TextCapitalization.characters,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.deny(RegExp('[\\n\\r]')),
+                      UpperCaseTextFormatter(),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Search Bar
-                TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search for places...',
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      color: appColors.textLight,
-                    ),
-                    prefixIcon: Icon(Icons.search, color: appColors.accentTeal),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: appColors.scaffoldBackground,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
+                    decoration: InputDecoration(
+                      hintText: 'SEARCH FOR PLACES...',
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: appColors.textLight,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: appColors.accentTeal,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: appColors.scaffoldBackground,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Categories Label
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 12),
-                  child: Text(
-                    'BROWSE BY CATEGORY',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: appColors.textDark,
-                      letterSpacing: 1.2,
+                  if (trimmedQuery.isNotEmpty) ...<Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
+                      child: Text(
+                        'SEARCH RESULTS',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: appColors.textDark,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                    searchAsync.when(
+                      data: (places) {
+                        if (places.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Text(
+                              'No matches found.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: places
+                              .map(
+                                (place) => _buildSearchResultCard(
+                                  context,
+                                  appColors,
+                                  place,
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      error: (error, _) => Text(
+                        'Unable to search places: $error',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ] else ...<Widget>[
+                    // Categories Label
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
+                      child: Text(
+                        'BROWSE BY CATEGORY',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: appColors.textDark,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
 
-                // Category Grid
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.0,
-                  children: PlaceCategory.values.map((category) {
-                    return _buildCategoryCard(context, appColors, category);
-                  }).toList(),
-                ),
-              ],
+                    // Category Grid
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                      children: PlaceCategory.values.map((category) {
+                        return _buildCategoryCard(context, appColors, category);
+                      }).toList(),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -251,6 +315,206 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
     );
   }
 
+  Widget _buildSearchResultCard(
+    BuildContext context,
+    dynamic appColors,
+    Place place,
+  ) {
+    final String? imageUrl = place.logoUrl ?? place.coverPhotoUrl;
+    final category = _resolveCategory(place.category);
+    final colors = _getCategoryColors(appColors, category);
+    final icon = _getCategoryIcon(category);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          context.push(RoutePaths.placeDetail, extra: place);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: imageUrl != null && imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildSearchResultIcon(appColors, colors, icon),
+                        )
+                      : _buildSearchResultIcon(appColors, colors, icon),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              place.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: appColors.textDark,
+                              ),
+                            ),
+                          ),
+                          if (place.isVerified)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: appColors.accentTeal.withValues(
+                                  alpha: 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'VERIFIED',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: appColors.accentTeal,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (place.subcategory != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: appColors.lightPurple.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: appColors.primaryPurple.withValues(
+                                alpha: 0.3,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            place.subcategory!.toUpperCase().replaceAll(
+                              '-',
+                              ' ',
+                            ),
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: appColors.primaryPurple,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      if (place.reviewCount > 0) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: <Widget>[
+                            StarRatingDisplay(
+                              rating: place.averageRating,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${place.averageRating.toStringAsFixed(1)} (${place.reviewCount})',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: appColors.textLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (place.address != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: appColors.textLight,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                place.address!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: appColors.textLight,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (place.priceRange != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Price: ${place.priceRange}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: appColors.textLight,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: appColors.divider, size: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResultIcon(
+    dynamic appColors,
+    List<Color> colors,
+    IconData icon,
+  ) {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Icon(icon, color: appColors.white, size: 32),
+    );
+  }
+
+  PlaceCategory _resolveCategory(String value) {
+    return PlaceCategory.values.firstWhere(
+      (category) => category.value.toLowerCase() == value.toLowerCase(),
+      orElse: () => PlaceCategory.business,
+    );
+  }
+
   /// Get gradient colors for each category
   List<Color> _getCategoryColors(dynamic appColors, PlaceCategory category) {
     switch (category) {
@@ -297,5 +561,18 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
       case PlaceCategory.outdoors:
         return Icons.phishing; // Fish icon for outdoors
     }
+  }
+}
+
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return newValue.copyWith(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
   }
 }
