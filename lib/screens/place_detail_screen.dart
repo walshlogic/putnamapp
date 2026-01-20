@@ -30,6 +30,7 @@ class PlaceDetailScreen extends ConsumerWidget {
     final appColors = context.appColors;
     final profileAsync = ref.watch(currentUserProfileProvider);
     final reviewsAsync = ref.watch(placeReviewsProvider(place.id));
+    final coverUrl = place.coverPhotoUrl ?? place.logoUrl;
 
     return Scaffold(
       appBar: const PutnamAppBar(showBackButton: true),
@@ -45,24 +46,40 @@ class PlaceDetailScreen extends ConsumerWidget {
                 return ListView(
                   children: <Widget>[
                     // Cover Photo or Gradient Header
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: <Color>[
-                            appColors.accentTeal,
-                            appColors.accentTealDark,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.store,
-                          size: 80,
-                          color: appColors.white.withValues(alpha: 0.5),
-                        ),
+                    SizedBox(
+                      height: 220,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          if (coverUrl != null && coverUrl.isNotEmpty)
+                            Image.network(
+                              coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _buildCoverFallback(appColors),
+                            )
+                          else
+                            _buildCoverFallback(appColors),
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: <Color>[
+                                  appColors.accentTeal.withValues(alpha: 0.75),
+                                  appColors.accentTealDark.withValues(alpha: 0.75),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: Icon(
+                              Icons.store,
+                              size: 72,
+                              color: appColors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -126,7 +143,9 @@ class PlaceDetailScreen extends ConsumerWidget {
 
                           const SizedBox(height: 20),
                           Divider(color: appColors.divider),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
+
+                          _buildQuickActions(context, appColors, place),
 
                           // Contact Information
                           if (place.address != null)
@@ -227,6 +246,101 @@ class PlaceDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: content,
     );
+  }
+
+  Widget _buildCoverFallback(dynamic appColors) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            appColors.accentTeal,
+            appColors.accentTealDark,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(
+    BuildContext context,
+    dynamic appColors,
+    Place place,
+  ) {
+    final actions = <Widget>[
+      if (place.phone != null)
+        _buildActionButton(
+          appColors,
+          icon: Icons.phone,
+          label: 'Call',
+          onTap: () => _launchPhone(place.phone!),
+        ),
+      if (place.website != null)
+        _buildActionButton(
+          appColors,
+          icon: Icons.language,
+          label: 'Website',
+          onTap: () => _launchUrl(place.website!),
+        ),
+      if (place.address != null || (place.latitude != null && place.longitude != null))
+        _buildActionButton(
+          appColors,
+          icon: Icons.map,
+          label: 'Directions',
+          onTap: () => _launchMaps(place),
+        ),
+    ];
+
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: actions,
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    dynamic appColors, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18, color: appColors.accentTeal),
+      label: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: appColors.accentTeal,
+          letterSpacing: 0.5,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: appColors.accentTeal.withValues(alpha: 0.4)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _launchMaps(Place place) {
+    String query;
+    if (place.latitude != null && place.longitude != null) {
+      query = '${place.latitude},${place.longitude}';
+    } else {
+      query = Uri.encodeComponent(place.fullAddress);
+    }
+    final url = 'https://www.google.com/maps/search/?api=1&query=$query';
+    _launchUrl(url);
   }
 
   Widget _buildReviewsSection(

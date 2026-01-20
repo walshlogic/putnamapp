@@ -33,13 +33,11 @@ class AuthService {
   }) async {
     try {
       debugPrint('📝 AuthService: Starting signup for $email');
-      
+
       final AuthResponse response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: <String, dynamic>{
-          'display_name': displayName,
-        },
+        data: <String, dynamic>{'display_name': displayName},
       );
 
       debugPrint('📝 AuthService: Signup response received');
@@ -51,19 +49,21 @@ class AuthService {
 
       // Wait a moment for the trigger to create the profile
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       debugPrint('📝 AuthService: Fetching auto-created profile');
 
       // Fetch the profile that was auto-created by the trigger
       var profile = await getUserProfile(response.user!.id);
-      
+
       // Start the 48-hour trial if not already started
       if (profile.trialStartedAt == null) {
         debugPrint('🎁 AuthService: Starting 48-hour trial for new user');
         profile = await startTrial(response.user!.id);
       }
-      
-      debugPrint('✅ AuthService: Signup successful! Profile created: ${profile.email}');
+
+      debugPrint(
+        '✅ AuthService: Signup successful! Profile created: ${profile.email}',
+      );
 
       return profile;
     } on AuthException catch (e) {
@@ -82,7 +82,7 @@ class AuthService {
   }) async {
     try {
       debugPrint('🔐 AuthService: Starting sign in for $email');
-      
+
       final AuthResponse response = await _client.auth.signInWithPassword(
         email: email,
         password: password,
@@ -90,19 +90,25 @@ class AuthService {
 
       debugPrint('🔐 AuthService: Sign in response received');
       debugPrint('🔐 AuthService: User ID: ${response.user?.id}');
-      debugPrint('🔐 AuthService: Session: ${response.session != null ? "exists" : "null"}');
+      debugPrint(
+        '🔐 AuthService: Session: ${response.session != null ? "exists" : "null"}',
+      );
 
       if (response.user == null) {
         debugPrint('❌ AuthService: Response user is null');
         throw AuthenticationException('Failed to sign in');
       }
 
-      debugPrint('🔐 AuthService: Fetching user profile for ${response.user!.id}');
-      
+      debugPrint(
+        '🔐 AuthService: Fetching user profile for ${response.user!.id}',
+      );
+
       // Fetch user profile from database
       final profile = await getUserProfile(response.user!.id);
-      
-      debugPrint('✅ AuthService: Sign in successful! Profile: ${profile.email}');
+
+      debugPrint(
+        '✅ AuthService: Sign in successful! Profile: ${profile.email}',
+      );
       return profile;
     } on AuthException catch (e) {
       debugPrint('❌ AuthService: AuthException: ${e.message}');
@@ -110,22 +116,6 @@ class AuthService {
     } catch (e) {
       debugPrint('❌ AuthService: Unexpected error: $e');
       throw AuthenticationException('Failed to sign in: $e');
-    }
-  }
-
-  /// Sign in with Google
-  Future<bool> signInWithGoogle() async {
-    try {
-      final bool result = await _client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'io.supabase.putnamapp://login-callback',
-      );
-
-      return result;
-    } on AuthException catch (e) {
-      throw AuthenticationException(e.message);
-    } catch (e) {
-      throw AuthenticationException('Failed to sign in with Google: $e');
     }
   }
 
@@ -182,14 +172,16 @@ class AuthService {
   Future<UserProfile> getUserProfile(String userId) async {
     try {
       debugPrint('📊 AuthService: Querying user_profiles for user: $userId');
-      
+
       final Map<String, dynamic>? data = await _client
           .from('user_profiles')
           .select()
           .eq('id', userId)
           .maybeSingle();
 
-      debugPrint('📊 AuthService: Query result: ${data != null ? "found" : "null"}');
+      debugPrint(
+        '📊 AuthService: Query result: ${data != null ? "found" : "null"}',
+      );
 
       if (data == null) {
         debugPrint('❌ AuthService: User profile not found in database');
@@ -323,4 +315,3 @@ class AuthService {
     }
   }
 }
-

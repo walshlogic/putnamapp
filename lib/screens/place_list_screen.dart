@@ -382,6 +382,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
   }
 
   Widget _buildPlaceCard(BuildContext context, dynamic appColors, Place place) {
+    final String? imageUrl = place.logoUrl ?? place.coverPhotoUrl;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -397,22 +398,18 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 // Icon/Photo placeholder
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _getCategoryColors(appColors),
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getCategoryIcon(),
-                    color: appColors.white,
-                    size: 32,
-                  ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: imageUrl != null && imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildPlaceIcon(appColors),
+                        )
+                      : _buildPlaceIcon(appColors),
                 ),
                 const SizedBox(width: 16),
 
@@ -421,14 +418,40 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      // Name
-                      Text(
-                        place.name.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: appColors.textDark,
-                        ),
+                      // Name + Verified
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              place.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: appColors.textDark,
+                              ),
+                            ),
+                          ),
+                          if (place.isVerified)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    appColors.accentTeal.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'VERIFIED',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: appColors.accentTeal,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       
                       // Subcategory badge
@@ -511,11 +534,10 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                       if (place.priceRange != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          place.priceRange!,
+                          'Price: ${place.priceRange}',
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: appColors.accentTeal,
+                            fontSize: 12,
+                            color: appColors.textLight,
                           ),
                         ),
                       ],
@@ -533,6 +555,25 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceIcon(dynamic appColors) {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _getCategoryColors(appColors),
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Icon(
+        _getCategoryIcon(),
+        color: appColors.white,
+        size: 32,
       ),
     );
   }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../config/route_paths.dart';
 import '../config/route_names.dart';
 import '../extensions/build_context_extensions.dart';
 import '../models/booking.dart';
+import '../models/booking_comment.dart';
+import '../providers/auth_providers.dart';
+import '../providers/booking_comment_providers.dart';
 import '../providers/booking_providers.dart';
 import '../providers/person_providers.dart';
 import '../utils/text_cleaner.dart';
@@ -26,6 +28,14 @@ class BookingDetailScreen extends ConsumerWidget {
         ? ref.watch(bookingsByMniProvider(booking.mniNo))
         : ref.watch(bookingsByNameProvider(booking.name));
     final personData = ref.watch(personByNameProvider(booking.name));
+    final commentsAsync = booking.mniNo.isNotEmpty
+        ? ref.watch(bookingCommentsByMniProvider(booking.mniNo))
+        : ref.watch(bookingCommentsByNameProvider(booking.name));
+    final isLoggedIn = ref.watch(isLoggedInProvider);
+    final bookingHistory = allBookings.maybeWhen(
+      data: (list) => list,
+      orElse: () => null,
+    );
 
     final styles = context.detailScreenStyles;
 
@@ -322,6 +332,67 @@ class BookingDetailScreen extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
+                // Comments Card
+                _buildSectionCard(
+                  context,
+                  icon: Icons.forum_outlined,
+                  title: 'COMMENTS',
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        commentsAsync.when(
+                          data: (comments) => Text(
+                            '${comments.length}',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(color: appColors.primaryPurple),
+                          ),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            if (!isLoggedIn) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Please sign in to leave a comment.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            _openAddCommentScreen(context, ref, booking);
+                          },
+                          icon: const Icon(Icons.add_comment_outlined, size: 18),
+                          label: const Text('ADD COMMENT'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    commentsAsync.when(
+                      data: (comments) => _buildCommentsList(
+                        context,
+                        appColors,
+                        comments,
+                        bookingHistory,
+                      ),
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      error: (error, _) => Text(
+                        'Unable to load comments: $error',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
                 // Holds Card
                 if (booking.holdsText.isNotEmpty)
                   _buildSectionCard(
@@ -588,6 +659,141 @@ class BookingDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openAddCommentScreen(
+    BuildContext context,
+    WidgetRef ref,
+    JailBooking booking,
+  ) async {
+    final result = await context.push<bool>(
+      RoutePaths.bookingCommentCreate,
+      extra: booking,
+    );
+    if (result == true) {
+      if (booking.mniNo.isNotEmpty) {
+        ref.invalidate(bookingCommentsByMniProvider(booking.mniNo));
+      } else {
+        ref.invalidate(bookingCommentsByNameProvider(booking.name));
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment saved.')),
+        );
+      }
+    }
+  }
+
+  Widget _buildCommentsList(
+    BuildContext context,
+    dynamic appColors,
+    List<BookingComment> comments,
+    List<JailBooking>? bookingHistory,
+  ) {
+    if (comments.isEmpty) {
+      return Text(
+        'No comments yet. Be the first to add one.',
+        style: Theme.of(context).textTheme.bodySmall,
+      );
+    }
+
+    return Column(
+      children: comments.map((comment) {
+        return _buildCommentItem(
+          context,
+          appColors,
+          comment,
+          bookingHistory,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCommentItem(
+    BuildContext context,
+    dynamic appColors,
+    BookingComment comment,
+    List<JailBooking>? bookingHistory,
+  ) {
+    final author = (comment.userName == null || comment.userName!.isEmpty)
+        ? 'User'
+        : comment.userName!;
+
+    return InkWell(
+      onTap: bookingHistory == null
+          ? null
+          : () => _openCommentBooking(context, comment, bookingHistory),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: appColors.scaffoldBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: appColors.divider.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: appColors.lightPurple,
+                  backgroundImage: comment.userPhotoUrl != null
+                      ? NetworkImage(comment.userPhotoUrl!)
+                      : null,
+                  child: comment.userPhotoUrl == null
+                      ? Icon(Icons.person, size: 16, color: appColors.primaryPurple)
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    author,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: appColors.textDark,
+                    ),
+                  ),
+                ),
+                Text(
+                  comment.timeAgo,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: appColors.textLight,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              comment.comment,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openCommentBooking(
+    BuildContext context,
+    BookingComment comment,
+    List<JailBooking> bookingHistory,
+  ) {
+    JailBooking? target;
+    for (final booking in bookingHistory) {
+      if (booking.bookingNo == comment.bookingNo) {
+        target = booking;
+        break;
+      }
+    }
+    if (target == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking not found for this comment.')),
+      );
+      return;
+    }
+    context.push(RoutePaths.bookingDetail, extra: target);
   }
 
   Widget _buildSectionCard(

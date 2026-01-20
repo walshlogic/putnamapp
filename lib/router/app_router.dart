@@ -17,6 +17,7 @@ import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_of_use_screen.dart';
 import '../screens/agency_stats_screen.dart';
 import '../screens/booking_detail_screen.dart';
+import '../screens/booking_comment_create_screen.dart';
 import '../screens/booking_photo_progression_screen.dart';
 import '../screens/bookings_screen.dart';
 import '../screens/contact_screen.dart';
@@ -177,6 +178,16 @@ GoRouter createAppRouter(WidgetRef ref) {
         pageBuilder: (BuildContext context, GoRouterState state) {
           final JailBooking booking = state.extra! as JailBooking;
           return NoTransitionPage(child: BookingDetailScreen(booking: booking));
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.bookingCommentCreate,
+        name: RouteNames.bookingCommentCreate,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          final JailBooking booking = state.extra! as JailBooking;
+          return NoTransitionPage(
+            child: BookingCommentCreateScreen(booking: booking),
+          );
         },
       ),
       GoRoute(

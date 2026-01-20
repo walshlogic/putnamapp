@@ -85,27 +85,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final signInWithGoogle = ref.read(signInWithGoogleProvider);
-      await signInWithGoogle();
-
-      if (mounted) {
-        context.goNamed(RouteNames.home);
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
-      });
-    }
-  }
-
   Future<void> _handleAppleSignIn() async {
     setState(() {
       _isLoading = true;
@@ -322,17 +301,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     onPressed: _isLoading ? null : _handleAppleSignIn,
                     icon: const Icon(Icons.apple, size: 24),
                     label: const Text('Continue with Apple'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Google sign in
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _handleGoogleSignIn,
-                    icon: const Icon(Icons.g_mobiledata, size: 24),
-                    label: const Text('Continue with Google'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),

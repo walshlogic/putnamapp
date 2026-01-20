@@ -165,18 +165,6 @@ final signOutProvider = Provider<Future<void> Function()>((ref) {
   };
 });
 
-/// Provider for Google sign in action
-final signInWithGoogleProvider = Provider<Future<bool> Function()>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return () async {
-    final result = await authService.signInWithGoogle();
-    if (result) {
-      ref.invalidate(currentUserProfileProvider);
-    }
-    return result;
-  };
-});
-
 /// Provider for Apple sign in action
 final signInWithAppleProvider = Provider<Future<bool> Function()>((ref) {
   final authService = ref.watch(authServiceProvider);
