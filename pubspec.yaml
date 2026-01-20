@@ -47,6 +47,7 @@ dependencies:
   google_mobile_ads: ^5.1.0
   purchases_ui_flutter: ^8.11.0
   package_info_plus: ^8.1.4
+  image_picker: ^1.0.8
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +76,7 @@ flutter:
     - assets/images/police_car.gif
     - assets/images/sky.gif
     - assets/images/putnam_app_background.jpg
+    - assets/images/app_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

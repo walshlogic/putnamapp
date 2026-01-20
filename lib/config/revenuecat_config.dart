@@ -23,19 +23,20 @@ class RevenueCatConfig {
   }
 
   /// Entitlement IDs
-  static const String silverEntitlement = 'silver';
-  static const String goldEntitlement = 'gold';
+  static const String proEntitlement = 'PutnamApp PRO';
 
-  /// Package identifiers (these match what you set in RevenueCat dashboard)
-  static const String silverPackageId = '\$rc_monthly_silver';
-  static const String goldPackageId = '\$rc_monthly_gold';
+  /// Product identifiers from App Store Connect / RevenueCat
+  static const String proMonthlyProductId = 'putnamapp_pro_monthly';
+  static const String proYearlyProductId = 'PutnamApp_PRO_Yearly';
+
+  /// Optional package identifiers (if you set them in RevenueCat offerings)
+  static const String proMonthlyPackageId = '\$rc_monthly';
+  static const String proYearlyPackageId = '\$rc_annual';
 
   /// Get price for a specific tier
   static double getPriceForTier(String tier) {
     switch (tier) {
-      case 'silver':
-        return 1.99;
-      case 'gold':
+      case 'pro':
         return 3.99;
       case 'free':
       default:
@@ -46,14 +47,11 @@ class RevenueCatConfig {
   /// Get display name for tier
   static String getDisplayNameForTier(String tier) {
     switch (tier) {
-      case 'silver':
-        return 'Silver';
-      case 'gold':
-        return 'Gold Premium';
+      case 'pro':
+        return 'PRO';
       case 'free':
       default:
         return 'Free';
     }
   }
 }
-

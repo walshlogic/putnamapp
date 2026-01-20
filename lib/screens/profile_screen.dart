@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_names.dart';
 import '../models/user_profile.dart';
@@ -17,6 +19,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditMode = false;
   final _displayNameController = TextEditingController();
   bool _isLoading = false;
+  bool _isUploadingAvatar = false;
   String? _errorMessage;
   String? _successMessage;
 
@@ -60,6 +63,145 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });
+    }
+  }
+
+  String _contentTypeForExtension(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  Future<void> _showAvatarOptions(UserProfile profile) async {
+    if (_isUploadingAvatar) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickAndUploadAvatar(profile);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Remove photo'),
+                enabled: profile.avatarUrl != null,
+                onTap: profile.avatarUrl == null
+                    ? null
+                    : () {
+                        Navigator.of(context).pop();
+                        _removeAvatar();
+                      },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadAvatar(UserProfile profile) async {
+    if (_isUploadingAvatar) return;
+
+    final picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _isUploadingAvatar = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      final bytes = await picked.readAsBytes();
+      final extension = picked.name.split('.').last;
+      final filePath =
+          '${profile.id}/${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+      final storage = Supabase.instance.client.storage.from('avatars');
+      await storage.uploadBinary(
+        filePath,
+        bytes,
+        fileOptions: FileOptions(
+          upsert: true,
+          contentType: _contentTypeForExtension(extension),
+        ),
+      );
+
+      final publicUrl = storage.getPublicUrl(filePath);
+      final updateProfile = ref.read(updateUserProfileProvider);
+      await updateProfile(avatarUrl: publicUrl);
+
+      if (mounted) {
+        setState(() {
+          _successMessage = 'Profile photo updated successfully';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingAvatar = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    setState(() {
+      _isUploadingAvatar = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      final updateProfile = ref.read(updateUserProfileProvider);
+      await updateProfile(removeAvatar: true);
+      if (mounted) {
+        setState(() {
+          _successMessage = 'Profile photo removed';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingAvatar = false;
+        });
+      }
     }
   }
 
@@ -160,19 +302,54 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Center(
                   child: Column(
                     children: <Widget>[
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.blue,
-                        backgroundImage: profile.avatarUrl != null
-                            ? NetworkImage(profile.avatarUrl!)
-                            : null,
-                        child: profile.avatarUrl == null
-                            ? const Icon(
-                                Icons.person,
-                                size: 50,
-                                color: Colors.white,
-                              )
-                            : null,
+                      GestureDetector(
+                        onTap: _isEditMode ? () => _showAvatarOptions(profile) : null,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: <Widget>[
+                            CircleAvatar(
+                              radius: 100,
+                              backgroundColor: Colors.blue,
+                              backgroundImage: profile.avatarUrl != null
+                                  ? NetworkImage(profile.avatarUrl!)
+                                  : const AssetImage(
+                                      'assets/images/app_icon.png',
+                                    ),
+                            ),
+                            if (_isUploadingAvatar)
+                              Container(
+                                width: 200,
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.35),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            if (_isEditMode)
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.7),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    size: 22,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (!_isEditMode) ...<Widget>[

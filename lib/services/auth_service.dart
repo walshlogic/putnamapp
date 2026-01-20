@@ -201,6 +201,7 @@ class AuthService {
   Future<UserProfile> updateUserProfile({
     String? displayName,
     String? avatarUrl,
+    bool removeAvatar = false,
   }) async {
     try {
       if (currentUser == null) {
@@ -215,7 +216,9 @@ class AuthService {
         updates['display_name'] = displayName;
       }
 
-      if (avatarUrl != null) {
+      if (removeAvatar) {
+        updates['avatar_url'] = null;
+      } else if (avatarUrl != null) {
         updates['avatar_url'] = avatarUrl;
       }
 

@@ -190,13 +190,22 @@ final resetPasswordProvider = Provider<Future<void> Function(String email)>((
 /// Provider for updating user profile
 final updateUserProfileProvider =
     Provider<
-      Future<UserProfile> Function({String? displayName, String? avatarUrl})
+      Future<UserProfile> Function({
+        String? displayName,
+        String? avatarUrl,
+        bool removeAvatar,
+      })
     >((ref) {
       final authService = ref.watch(authServiceProvider);
-      return ({String? displayName, String? avatarUrl}) async {
+      return ({
+        String? displayName,
+        String? avatarUrl,
+        bool removeAvatar = false,
+      }) async {
         final profile = await authService.updateUserProfile(
           displayName: displayName,
           avatarUrl: avatarUrl,
+          removeAvatar: removeAvatar,
         );
         // Invalidate profile to refresh
         ref.invalidate(currentUserProfileProvider);

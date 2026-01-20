@@ -163,10 +163,8 @@ class RevenueCatService {
 
   /// Get current subscription tier from entitlements
   String getTierFromEntitlements(CustomerInfo customerInfo) {
-    if (hasEntitlement(customerInfo, RevenueCatConfig.goldEntitlement)) {
-      return 'gold';
-    } else if (hasEntitlement(customerInfo, RevenueCatConfig.silverEntitlement)) {
-      return 'silver';
+    if (hasEntitlement(customerInfo, RevenueCatConfig.proEntitlement)) {
+      return 'pro';
     }
     return 'free';
   }

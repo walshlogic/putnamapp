@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:go_router/go_router.dart';
+import '../extensions/build_context_extensions.dart';
 import '../providers/auth_providers.dart';
 import '../providers/revenuecat_providers.dart';
 import '../config/revenuecat_config.dart';
@@ -13,10 +14,21 @@ import '../models/user_profile.dart'; // Import to access extension methods
 class TierSelectionScreen extends ConsumerWidget {
   const TierSelectionScreen({super.key});
 
+  static const List<String> _proFeatures = <String>[
+    'NO ADS OR POP-UPS... EVER!',
+    'MAKE & READ COMMENTS EVERYWHERE!',
+    'CREATE YOUR OWN PROFILE & USERNAME!',
+    'ALL FEATURES UNLOCKED!',
+    'PRIORITY SUPPORT!',
+    'ADVISORY BOARD MEMBER!',
+    'ADD & EDIT YOUR BUSINESS INFO!',
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentUserProfileProvider);
     final offeringsAsync = ref.watch(offeringsProvider);
+    final appColors = context.appColors;
 
     return Scaffold(
       appBar: AppBar(title: const Text('CHOOSE YOUR PLAN')),
@@ -38,17 +50,11 @@ class TierSelectionScreen extends ConsumerWidget {
               children: <Widget>[
                 // Header
                 const Text(
-                  'Upgrade Your Experience',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  'Go PRO!',
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Choose the plan that\'s right for you',
-                  style: TextStyle(fontSize: 12, color: Colors.black),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 4),
 
                 // Trial Status Banner (if in trial)
                 if (isInTrial && remainingHours != null)
@@ -118,71 +124,135 @@ class TierSelectionScreen extends ConsumerWidget {
                     }
 
                     // Find packages
-                    Package? silverPackage;
-                    Package? goldPackage;
+                    Package? monthlyPackage;
+                    Package? yearlyPackage;
 
                     for (final package in currentOffering.availablePackages) {
+                      final packageId = package.identifier.toLowerCase();
+                      final productId = package.storeProduct.identifier
+                          .toLowerCase();
+                      final periodText = package.storeProduct.subscriptionPeriod
+                          .toString()
+                          .toLowerCase();
+                      final isMonthlyPeriod =
+                          periodText.contains('month') ||
+                          periodText.contains('p1m');
+                      final isYearlyPeriod =
+                          periodText.contains('year') ||
+                          periodText.contains('annual') ||
+                          periodText.contains('p1y') ||
+                          periodText.contains('p12m');
                       if (package.identifier ==
-                              RevenueCatConfig.silverPackageId ||
-                          package.identifier.contains('silver')) {
-                        silverPackage = package;
+                              RevenueCatConfig.proMonthlyPackageId ||
+                          productId ==
+                              RevenueCatConfig.proMonthlyProductId
+                                  .toLowerCase() ||
+                          packageId.contains('monthly') ||
+                          packageId.contains('month') ||
+                          isMonthlyPeriod) {
+                        monthlyPackage ??= package;
                       } else if (package.identifier ==
-                              RevenueCatConfig.goldPackageId ||
-                          package.identifier.contains('gold')) {
-                        goldPackage = package;
+                              RevenueCatConfig.proYearlyPackageId ||
+                          productId ==
+                              RevenueCatConfig.proYearlyProductId
+                                  .toLowerCase() ||
+                          packageId.contains('annual') ||
+                          packageId.contains('yearly') ||
+                          packageId.contains('year') ||
+                          isYearlyPeriod) {
+                        yearlyPackage ??= package;
                       }
+                    }
+
+                    final hasSinglePlan =
+                        (monthlyPackage != null) ^ (yearlyPackage != null);
+
+                    if (monthlyPackage != null && yearlyPackage != null) {
+                      return Column(
+                        children: <Widget>[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Expanded(
+                                child: _buildTierCard(
+                                  context: context,
+                                  ref: ref,
+                                  tier: 'pro_monthly',
+                                  name: 'MONTHLY',
+                                  price:
+                                      monthlyPackage.storeProduct.priceString,
+                                  badge: 'PRO',
+                                  color: Colors.blue.shade300,
+                                  billingPeriodLabel: '/month',
+                                  isCurrentTier: currentTier == 'pro',
+                                  package: monthlyPackage,
+                                  isInTrial: isInTrial,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildTierCard(
+                                  context: context,
+                                  ref: ref,
+                                  tier: 'pro_yearly',
+                                  name: 'YEARLY',
+                                  price: yearlyPackage.storeProduct.priceString,
+                                  badge: 'PRO',
+                                  color: appColors.accentGoldDark,
+                                  billingPeriodLabel: '/year',
+                                  isCurrentTier: currentTier == 'pro',
+                                  isFeatured: true,
+                                  package: yearlyPackage,
+                                  isInTrial: isInTrial,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _buildBenefitsCard(context),
+                        ],
+                      );
                     }
 
                     return Column(
                       children: <Widget>[
-                        // Silver Tier Card
-                        if (silverPackage != null)
+                        if (monthlyPackage != null)
                           _buildTierCard(
                             context: context,
                             ref: ref,
-                            tier: 'silver',
-                            name: 'Silver',
-                            price: silverPackage.storeProduct.priceString,
-                            badge: '⭐',
-                            color: Colors.grey.shade300,
-                            features: <String>[
-                              'All Standard Features',
-                              'No Ads',
-                              '(Still See Pop-Ups)',
-                              'Message Support',
-                            ],
-                            isCurrentTier: currentTier == 'silver',
-                            package: silverPackage,
+                            tier: 'pro_monthly',
+                            name: 'Monthly',
+                            price: monthlyPackage.storeProduct.priceString,
+                            badge: 'PRO',
+                            color: Colors.blue.shade300,
+                            billingPeriodLabel: '/month',
+                            isCurrentTier:
+                                hasSinglePlan && currentTier == 'pro',
+                            package: monthlyPackage,
                             isInTrial: isInTrial,
                           ),
-                        if (silverPackage != null) const SizedBox(height: 16),
-
-                        // Gold Tier Card (Featured)
-                        if (goldPackage != null)
+                        if (monthlyPackage != null) const SizedBox(height: 16),
+                        if (yearlyPackage != null)
                           _buildTierCard(
                             context: context,
                             ref: ref,
-                            tier: 'gold',
-                            name: 'Gold Premium',
-                            price: goldPackage.storeProduct.priceString,
-                            badge: '⭐⭐',
-                            color: Colors.amber.shade400,
-                            features: <String>[
-                              'NO Ads or Pop-Ups!',
-                              'Comment on Arrests!',
-                              'Comment Everywhere!',
-                              'Add/Hide Profile Info!',
-                              'All Features Unlocked!',
-                              'Premium Support!',
-                              'Early Access!',
-                              'Surveys and Input!',
-                            ],
-                            isCurrentTier: currentTier == 'gold',
+                            tier: 'pro_yearly',
+                            name: 'Yearly',
+                            price: yearlyPackage.storeProduct.priceString,
+                            badge: 'PRO',
+                            color: appColors.accentGoldDark,
+                            billingPeriodLabel: '/year',
+                            isCurrentTier:
+                                hasSinglePlan && currentTier == 'pro',
                             isFeatured: true,
-                            package: goldPackage,
+                            package: yearlyPackage,
                             isInTrial: isInTrial,
                           ),
-                        if (goldPackage == null && silverPackage == null)
+                        if (monthlyPackage != null || yearlyPackage != null)
+                          const SizedBox(height: 16),
+                        if (monthlyPackage != null || yearlyPackage != null)
+                          _buildBenefitsCard(context),
+                        if (yearlyPackage == null && monthlyPackage == null)
                           _buildFallbackTiers(
                             context: context,
                             ref: ref,
@@ -328,48 +398,42 @@ class TierSelectionScreen extends ConsumerWidget {
     required String currentTier,
     required bool isInTrial,
   }) {
+    final appColors = context.appColors;
     return Column(
       children: <Widget>[
-        // Silver Tier Card (fallback - no package available)
+        // PRO Monthly (fallback - no package available)
         _buildTierCard(
           context: context,
           ref: ref,
-          tier: 'silver',
-          name: 'Silver',
-          price: '\$2.99',
-          badge: '⭐',
-          color: Colors.grey.shade300,
-          features: <String>[
-            'All premium features',
-            'Priority support',
-            'Early access to updates',
-          ],
-          isCurrentTier: currentTier == 'silver',
+          tier: 'pro_monthly',
+          name: 'Monthly',
+          price: '\$3.99',
+          badge: 'PRO',
+          color: Colors.blue.shade300,
+          billingPeriodLabel: '/month',
+          isCurrentTier: currentTier == 'pro',
           package: null,
           isInTrial: isInTrial,
         ),
         const SizedBox(height: 16),
 
-        // Gold Tier Card (fallback - no package available)
+        // PRO Yearly (fallback - no package available)
         _buildTierCard(
           context: context,
           ref: ref,
-          tier: 'gold',
-          name: 'Gold Premium',
-          price: '\$4.99',
-          badge: '⭐⭐',
-          color: Colors.amber.shade400,
-          features: <String>[
-            'All premium features',
-            'Premium support',
-            'Early access to new features',
-            'Exclusive content',
-          ],
-          isCurrentTier: currentTier == 'gold',
+          tier: 'pro_yearly',
+          name: 'Yearly',
+          price: '\$19.99',
+          badge: 'PRO',
+          color: appColors.accentGoldDark,
+          billingPeriodLabel: '/year',
+          isCurrentTier: currentTier == 'pro',
           isFeatured: true,
           package: null,
           isInTrial: isInTrial,
         ),
+        const SizedBox(height: 16),
+        _buildBenefitsCard(context),
       ],
     );
   }
@@ -382,16 +446,20 @@ class TierSelectionScreen extends ConsumerWidget {
     required String price,
     required String badge,
     required Color color,
-    required List<String> features,
+    required String billingPeriodLabel,
     bool isCurrentTier = false,
     bool isFeatured = false,
     Package? package,
     bool isInTrial = false,
   }) {
+    final appColors = context.appColors;
+    final primaryPurple = appColors.primaryPurple;
+    final lightPurple = appColors.primaryPurple.withOpacity(0.7);
+    final goldDark = appColors.accentGoldDark;
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: isFeatured ? Colors.amber : Colors.grey.shade300,
+          color: isFeatured ? goldDark : Colors.grey.shade300,
           width: isFeatured ? 3 : 1,
         ),
         borderRadius: BorderRadius.circular(16),
@@ -410,7 +478,7 @@ class TierSelectionScreen extends ConsumerWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.amber,
+                  color: goldDark,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(14),
                     bottomLeft: Radius.circular(8),
@@ -430,89 +498,45 @@ class TierSelectionScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 // Tier name and badge
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Text(badge, style: const TextStyle(fontSize: 24)),
-                    const SizedBox(width: 8),
+                    Text(
+                      badge,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: primaryPurple,
+                      ),
+                    ),
                     Text(
                       name,
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: lightPurple,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-
                 // Price with subscription period
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        Text(
-                          price,
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 8.0),
-                          child: Text(
-                            '/month',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (package != null &&
-                        package.storeProduct.subscriptionPeriod != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          'Auto-renewable subscription',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
+                    Text(
+                      price,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: color,
                       ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Features
-                ...features.map(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.check_circle,
-                          size: 20,
-                          color: Colors.green.shade600,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
 
                 // Subscribe button or Current Plan
                 if (isCurrentTier)
@@ -559,24 +583,29 @@ class TierSelectionScreen extends ConsumerWidget {
                           ? () => _handlePurchase(context, ref, package, tier)
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isFeatured ? Colors.amber : color,
+                        backgroundColor: isFeatured ? goldDark : color,
                         foregroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         disabledBackgroundColor: Colors.grey.shade300,
+                        elevation: 8,
                       ),
                       child: package != null
                           ? Text(
-                              'Subscribe to $name',
+                              isFeatured
+                                  ? 'SAVE YEARLY'
+                                  : 'SUBSCRIBE MONTHLY',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
+                              textAlign: TextAlign.center,
                             )
                           : const Text(
-                              'Loading...',
+                              'Not available yet',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -585,6 +614,51 @@ class TierSelectionScreen extends ConsumerWidget {
                     ),
                   ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBenefitsCard(BuildContext context) {
+    final appColors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            'PRO BENEFITS',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: appColors.accentGoldDark,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          ..._proFeatures.map(
+            (feature) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.check_circle,
+                    size: 32,
+                    color: appColors.accentGoldDark,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(feature, style: const TextStyle(fontSize: 13)),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
