@@ -1,0 +1,8 @@
+{
+  "SUPABASE_URL": "https://your-project.supabase.co",
+  "SUPABASE_ANON_KEY": "your-supabase-anon-key",
+  "REVENUECAT_IOS_API_KEY": "your-revenuecat-ios-key",
+  "REVENUECAT_ANDROID_API_KEY": "your-revenuecat-android-key",
+  "WEATHER_LAT": "29.6486",
+  "WEATHER_LON": "-81.6376"
+}

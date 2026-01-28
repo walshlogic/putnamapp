@@ -37,6 +37,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.accentOrange,
     required this.accentOrangeDark,
     required this.accentGoldDark,
+    required this.success,
 
     // UI element colors
     required this.divider,
@@ -76,6 +77,7 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color accentOrange;
   final Color accentOrangeDark;
   final Color accentGoldDark;
+  final Color success;
 
   // UI element colors
   final Color divider;
@@ -107,6 +109,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? accentOrange,
     Color? accentOrangeDark,
     Color? accentGoldDark,
+    Color? success,
     Color? divider,
     Color? border,
     Color? iconBackground,
@@ -133,6 +136,7 @@ class AppColors extends ThemeExtension<AppColors> {
       accentOrange: accentOrange ?? this.accentOrange,
       accentOrangeDark: accentOrangeDark ?? this.accentOrangeDark,
       accentGoldDark: accentGoldDark ?? this.accentGoldDark,
+      success: success ?? this.success,
       divider: divider ?? this.divider,
       border: border ?? this.border,
       iconBackground: iconBackground ?? this.iconBackground,
@@ -184,6 +188,7 @@ class AppColors extends ThemeExtension<AppColors> {
         other.accentGoldDark,
         t,
       )!,
+      success: Color.lerp(success, other.success, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
       border: Color.lerp(border, other.border, t)!,
       iconBackground: Color.lerp(iconBackground, other.iconBackground, t)!,
@@ -495,6 +500,7 @@ class AppTheme {
           accentOrange: Color(0xFFFF9F40),
           accentOrangeDark: Color(0xFFFF6F00),
           accentGoldDark: Color(0xFFF6A800),
+          success: Color(0xFF2ECC71),
 
           // UI element colors
           divider: Color(0xFFCCCCCC),

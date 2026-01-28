@@ -74,8 +74,8 @@ extension BuildContextX on BuildContext {
   void showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
+        content: Text(message, textAlign: TextAlign.center),
+        backgroundColor: appColors.success,
         duration: const Duration(seconds: 3),
       ),
     );

@@ -193,6 +193,7 @@ final updateUserProfileProvider =
       Future<UserProfile> Function({
         String? displayName,
         String? avatarUrl,
+        bool? commentAnonymous,
         bool removeAvatar,
       })
     >((ref) {
@@ -200,11 +201,13 @@ final updateUserProfileProvider =
       return ({
         String? displayName,
         String? avatarUrl,
+        bool? commentAnonymous,
         bool removeAvatar = false,
       }) async {
         final profile = await authService.updateUserProfile(
           displayName: displayName,
           avatarUrl: avatarUrl,
+          commentAnonymous: commentAnonymous,
           removeAvatar: removeAvatar,
         );
         // Invalidate profile to refresh

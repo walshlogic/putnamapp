@@ -55,7 +55,15 @@ def get_session_cookie(base_url: str) -> requests.Session:
         print(f'⚠️  Warning: Could not get session cookie: {e}')
         return session
 
-def download_file(url: str, output_path: Path, timeout: int = 300, method: str = 'GET', data: dict = None, headers: dict = None, session: requests.Session = None) -> bool:
+def download_file(
+    url: str,
+    output_path: Path,
+    timeout: int = 300,
+    method: str = 'GET',
+    data: dict = None,
+    headers: dict = None,
+    session: requests.Session = None,
+) -> bool:
     """
     Download a file from a URL (supports both GET and POST)
     
@@ -88,7 +96,11 @@ def download_file(url: str, output_path: Path, timeout: int = 300, method: str =
         }
         
         if headers:
-            default_headers.update(headers)
+            for key, value in headers.items():
+                if value is None:
+                    default_headers.pop(key, None)
+                else:
+                    default_headers[key] = value
         
         # Use session if provided, otherwise create new request
         if session is None:
@@ -177,8 +189,7 @@ def download_file(url: str, output_path: Path, timeout: int = 300, method: str =
                 content_preview = response_text[:200]
                 print(f'⚠️  Downloaded file is very small ({downloaded} bytes)')
                 print(f'   Content preview: {content_preview}')
-                if 'null' in content_preview.lower() or 'error' in content_preview.lower():
-                    return False
+                return False
             
             with open(output_path, 'wb') as f:
                 f.write(response.content)
@@ -253,19 +264,29 @@ def find_traffic_history_link(html_content: str, base_url: str) -> Optional[str]
         # The table shows "3" for Traffic History
         traffic_history_id = '3'
         
+        def is_valid_url_fragment(value: str) -> bool:
+            if not value:
+                return False
+            lowered = value.lower()
+            if '<' in value or '>' in value or 'strong' in lowered:
+                return False
+            return value.startswith(('http://', 'https://', '/', '?'))
+
         # Try to find download URL patterns
         for pattern in api_patterns:
             matches = re.findall(pattern, html_content, re.IGNORECASE)
             for match in matches:
                 if match and ('download' in match.lower() or 'api' in match.lower()):
+                    if not is_valid_url_fragment(match):
+                        continue
                     if match.startswith('http'):
                         return match
-                    elif match.startswith('/'):
+                    if match.startswith('/'):
                         base = base_url.rstrip('/')
                         return f"{base}{match}"
-                    else:
+                    if match.startswith('?'):
                         base = base_url.rstrip('/')
-                        return f"{base}/{match}"
+                        return f"{base}{match}"
         
         # Pattern 4: Try to construct download URL based on common patterns
         # Based on the website structure, try common download URL patterns
@@ -300,15 +321,14 @@ def find_traffic_history_link(html_content: str, base_url: str) -> Optional[str]
                         for link in links:
                             href = link.get('href', '').strip()
                             # Validate it's a real URL, not HTML text
-                            if href and href.startswith(('http://', 'https://', '/', '?')):
+            if is_valid_url_fragment(href):
                                 # Make sure it's not HTML text
-                                if '<' not in href and '>' not in href and 'strong' not in href.lower():
-                                    if href.startswith('http'):
-                                        return href
-                                    elif href.startswith('/'):
-                                        return f"{base_path}{href}"
-                                    elif href.startswith('?'):
-                                        return f"{base_path}{href}"
+                if href.startswith('http'):
+                    return href
+                if href.startswith('/'):
+                    return f"{base_path}{href}"
+                if href.startswith('?'):
+                    return f"{base_path}{href}"
         except ImportError:
             pass
         
@@ -318,13 +338,13 @@ def find_traffic_history_link(html_content: str, base_url: str) -> Optional[str]
         for match in matches:
             href = match.strip()
             # Validate it's a real URL, not HTML text
-            if href and '<' not in href and '>' not in href and 'strong' not in href.lower():
+            if is_valid_url_fragment(href):
                 if href.startswith('http'):
                     return href
-                elif href.startswith('/'):
+                if href.startswith('/'):
                     base = base_url.rstrip('/')
                     return f"{base}{href}"
-                elif href.startswith('?'):
+                if href.startswith('?'):
                     base = base_url.rstrip('/')
                     return f"{base}{href}"
         
@@ -412,22 +432,69 @@ def download_traffic_history() -> Optional[Path]:
         return None
     else:
         subscription_id = '3'  # Default: Traffic History subscription ID
-    
-    # Method 2: Use POST request to download endpoint
-    download_url = 'https://apps.putnam-fl.com/bocc/putsubs/main.php?action=Subscriptions.download'
+
     zip_filename = f'traffYR_{datetime.now().strftime("%Y%m%d")}.zip'
     zip_output_path = DOWNLOAD_DIR / zip_filename
-    
-    print(f'📥 Using POST request to download subscription ID: {subscription_id}')
     
     # Get session cookie first
     print('🍪 Getting session cookie...')
     session = get_session_cookie(CLERK_OF_COURT_URL)
+
+    # Method 2: Try to find a direct download URL from the page
+    try:
+        page_response = session.get(
+            CLERK_OF_COURT_URL,
+            headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'},
+            timeout=30,
+        )
+        if page_response.ok:
+            discovered_url = find_traffic_history_link(
+                page_response.text,
+                CLERK_OF_COURT_URL,
+            )
+            if discovered_url:
+                print(f'🔍 Found download URL from page: {discovered_url}')
+                if download_file(
+                    discovered_url,
+                    zip_output_path,
+                    method='GET',
+                    session=session,
+                ):
+                    if zipfile.is_zipfile(zip_output_path):
+                        print('✅ Downloaded ZIP file, extracting...')
+                        extracted_file = extract_zip_file(
+                            zip_output_path,
+                            DOWNLOAD_DIR,
+                        )
+                        if extracted_file:
+                            return extracted_file
+                    else:
+                        print('⚠️  Downloaded file is not a ZIP, treating as CSV')
+                        return zip_output_path
+    except Exception as e:
+        print(f'⚠️  Could not parse download URL from page: {e}')
+
+    # Method 3: Use POST request to download endpoint
+    download_url = 'https://apps.putnam-fl.com/bocc/putsubs/main.php?action=Subscriptions.download'
+    
+    print(f'📥 Using POST request to download subscription ID: {subscription_id}')
     
     # POST data: id=3 for Traffic History
     post_data = {'id': subscription_id}
     
-    if download_file(download_url, zip_output_path, method='POST', data=post_data, session=session):
+    post_headers = {
+        'Accept': '*/*',
+        'X-Requested-With': None,
+    }
+
+    if download_file(
+        download_url,
+        zip_output_path,
+        method='POST',
+        data=post_data,
+        session=session,
+        headers=post_headers,
+    ):
         # Check if downloaded file is actually a ZIP
         if zipfile.is_zipfile(zip_output_path):
             print('✅ Downloaded ZIP file, extracting...')
@@ -438,8 +505,21 @@ def download_traffic_history() -> Optional[Path]:
             # Might be CSV directly (legacy)
             print('⚠️  Downloaded file is not a ZIP, treating as CSV')
             return zip_output_path
+
+    # Method 4: Try GET with query string (some servers reject POST)
+    download_url_get = f'{download_url}&id={subscription_id}'
+    print(f'🔁 Trying GET fallback: {download_url_get}')
+    if download_file(download_url_get, zip_output_path, method='GET', session=session):
+        if zipfile.is_zipfile(zip_output_path):
+            print('✅ Downloaded ZIP file, extracting...')
+            extracted_file = extract_zip_file(zip_output_path, DOWNLOAD_DIR)
+            if extracted_file:
+                return extracted_file
+        else:
+            print('⚠️  Downloaded file is not a ZIP, treating as CSV')
+            return zip_output_path
     
-    # Method 3: Check for existing ZIP files
+    # Method 5: Check for existing ZIP files
     print('⚠️  POST download failed - checking for existing ZIP files...')
     zip_files = list(DOWNLOAD_DIR.glob('traffYR*.zip'))
     zip_files.extend(list(DOWNLOAD_DIR.glob('*traffic*.zip')))

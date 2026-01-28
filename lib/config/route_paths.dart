@@ -15,6 +15,7 @@ class RoutePaths {
   static const String bookingDetail = '/booking-detail';
   static const String bookingPhotoProgression = '/booking-photo-progression';
   static const String bookingCommentCreate = '/booking-comment-create';
+  static const String bookingCommentEdit = '/booking-comment-edit';
   static const String weather = '/weather';
   static const String sexOffenders = '/sex-offenders';
   static const String sexOffenderDetail = '/sex-offender-detail';

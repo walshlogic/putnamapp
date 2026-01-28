@@ -20,6 +20,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _displayNameController = TextEditingController();
   bool _isLoading = false;
   bool _isUploadingAvatar = false;
+  bool _isSavingComments = false;
+  bool? _commentAnonymousOverride;
   String? _errorMessage;
   String? _successMessage;
 
@@ -63,6 +65,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _handleUpdateCommentSettings(bool isAnonymous) async {
+    if (_isSavingComments) return;
+    setState(() {
+      _isSavingComments = true;
+      _commentAnonymousOverride = isAnonymous;
+    });
+
+    try {
+      final updateProfile = ref.read(updateUserProfileProvider);
+      await updateProfile(commentAnonymous: isAnonymous);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _commentAnonymousOverride = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update comment settings: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingComments = false;
+        });
+      }
     }
   }
 
@@ -293,6 +323,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _displayNameController.text = profile.displayName!;
           }
 
+          final bool commentAnonymous =
+              _commentAnonymousOverride ?? profile.commentAnonymous;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -578,6 +610,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'COMMENTS',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoRow(
+                          'User ID',
+                          profile.appUserId ?? 'PENDING',
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Post comments anonymously'),
+                          subtitle: const Text(
+                            'When enabled, your name shows as ANON',
+                          ),
+                          value: commentAnonymous,
+                          onChanged: _isSavingComments
+                              ? null
+                              : _handleUpdateCommentSettings,
+                        ),
                       ],
                     ),
                   ),

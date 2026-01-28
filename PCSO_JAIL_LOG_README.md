@@ -25,7 +25,7 @@ Optional (defaults shown):
 - `PCSO_CHARGES_TABLE=charges`
 - `PCSO_SKIP_INCOMPLETE=true`
 - `PCSO_SYNC_CHARGES=true`
-- `PCSO_PHOTO_BASE_URL=https://smartweb.pcso.us/smartwebclient/ViewImage.aspx?bookno=`
+- `PCSO_PHOTO_BASE_URL=https://smartweb.pcso.us/ViewImageFull.aspx?bookno=`
 - `PCSO_PHOTOS_BUCKET=pcso-booking-photos`
 - `PCSO_SYNC_PHOTOS=true`
 

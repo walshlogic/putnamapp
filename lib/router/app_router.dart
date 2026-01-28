@@ -6,6 +6,7 @@ import '../config/route_names.dart';
 import '../config/route_paths.dart';
 import '../models/agency.dart';
 import '../models/booking.dart';
+import '../models/booking_comment.dart';
 import '../models/top_list_item.dart';
 import '../providers/auth_providers.dart';
 import '../models/place.dart';
@@ -18,6 +19,7 @@ import '../screens/terms_of_use_screen.dart';
 import '../screens/agency_stats_screen.dart';
 import '../screens/booking_detail_screen.dart';
 import '../screens/booking_comment_create_screen.dart';
+import '../screens/booking_comment_edit_screen.dart';
 import '../screens/booking_photo_progression_screen.dart';
 import '../screens/bookings_screen.dart';
 import '../screens/contact_screen.dart';
@@ -187,6 +189,16 @@ GoRouter createAppRouter(WidgetRef ref) {
           final JailBooking booking = state.extra! as JailBooking;
           return NoTransitionPage(
             child: BookingCommentCreateScreen(booking: booking),
+          );
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.bookingCommentEdit,
+        name: RouteNames.bookingCommentEdit,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          final BookingComment comment = state.extra! as BookingComment;
+          return NoTransitionPage(
+            child: BookingCommentEditScreen(comment: comment),
           );
         },
       ),

@@ -1,4 +1,4 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'app_config.dart';
 
 /// RevenueCat configuration from environment variables
 class RevenueCatConfig {
@@ -6,18 +6,22 @@ class RevenueCatConfig {
 
   /// Get RevenueCat API key for iOS
   static String get iosApiKey {
-    final key = dotenv.env['REVENUECAT_IOS_API_KEY'];
-    if (key == null || key.isEmpty) {
-      throw Exception('REVENUECAT_IOS_API_KEY not found in .env file');
+    final key = AppConfig.revenueCatIosApiKey;
+    if (key.isEmpty) {
+      throw Exception(
+        'REVENUECAT_IOS_API_KEY not found in --dart-define values',
+      );
     }
     return key;
   }
 
   /// Get RevenueCat API key for Android
   static String get androidApiKey {
-    final key = dotenv.env['REVENUECAT_ANDROID_API_KEY'];
-    if (key == null || key.isEmpty) {
-      throw Exception('REVENUECAT_ANDROID_API_KEY not found in .env file');
+    final key = AppConfig.revenueCatAndroidApiKey;
+    if (key.isEmpty) {
+      throw Exception(
+        'REVENUECAT_ANDROID_API_KEY not found in --dart-define values',
+      );
     }
     return key;
   }

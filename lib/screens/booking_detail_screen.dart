@@ -32,6 +32,8 @@ class BookingDetailScreen extends ConsumerWidget {
         ? ref.watch(bookingCommentsByMniProvider(booking.mniNo))
         : ref.watch(bookingCommentsByNameProvider(booking.name));
     final isLoggedIn = ref.watch(isLoggedInProvider);
+    final currentSession = ref.watch(currentSessionProvider);
+    final currentUserId = currentSession?.user.id;
     final bookingHistory = allBookings.maybeWhen(
       data: (list) => list,
       orElse: () => null,
@@ -295,6 +297,7 @@ class BookingDetailScreen extends ConsumerWidget {
                   isLoggedIn,
                   booking,
                   bookingHistory,
+                  currentUserId,
                 ),
 
                 const SizedBox(height: 12),
@@ -628,9 +631,192 @@ class BookingDetailScreen extends ConsumerWidget {
       }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Comment saved.')),
+          SnackBar(
+            content: const Text('COMMENT SAVED', textAlign: TextAlign.center),
+            backgroundColor: context.appColors.success,
+          ),
         );
       }
+    }
+  }
+
+  void _invalidateComments(WidgetRef ref, BookingComment comment) {
+    final mniNo = comment.mniNo;
+    if (mniNo != null && mniNo.isNotEmpty) {
+      ref.invalidate(bookingCommentsByMniProvider(mniNo));
+    } else {
+      ref.invalidate(bookingCommentsByNameProvider(comment.personName));
+    }
+  }
+
+  Future<void> _showCommentActions(
+    BuildContext context,
+    WidgetRef ref,
+    BookingComment comment,
+    List<JailBooking>? bookingHistory,
+    String? currentUserId,
+  ) async {
+    final bool isOwner = currentUserId != null && currentUserId == comment.userId;
+    final _CommentAction? action = await showModalBottomSheet<_CommentAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (isOwner)
+                ListTile(
+                  leading: const Icon(Icons.edit),
+                  title: const Text('EDIT'),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_CommentAction.edit),
+                ),
+              if (isOwner)
+                ListTile(
+                  leading: const Icon(Icons.visibility_off_outlined),
+                  title: const Text('UNPUBLISH'),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_CommentAction.unpublish),
+                ),
+              ListTile(
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('REPORT'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_CommentAction.report),
+              ),
+              if (bookingHistory != null)
+                ListTile(
+                  leading: const Icon(Icons.open_in_new),
+                  title: const Text('VIEW BOOKING'),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_CommentAction.viewBooking),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+
+    switch (action) {
+      case _CommentAction.edit:
+        await _openEditCommentScreen(context, ref, comment);
+        return;
+      case _CommentAction.unpublish:
+        await _confirmUnpublish(context, ref, comment);
+        return;
+      case _CommentAction.report:
+        await _reportComment(context, ref, comment);
+        return;
+      case _CommentAction.viewBooking:
+        if (bookingHistory != null) {
+          _openCommentBooking(context, comment, bookingHistory);
+        }
+        return;
+      case null:
+        return;
+    }
+  }
+
+  Future<void> _openEditCommentScreen(
+    BuildContext context,
+    WidgetRef ref,
+    BookingComment comment,
+  ) async {
+    final result = await context.push<bool>(
+      RoutePaths.bookingCommentEdit,
+      extra: comment,
+    );
+    if (result == true && context.mounted) {
+      _invalidateComments(ref, comment);
+      context.showSuccessSnackBar('COMMENT UPDATED');
+    }
+  }
+
+  Future<void> _confirmUnpublish(
+    BuildContext context,
+    WidgetRef ref,
+    BookingComment comment,
+  ) async {
+    final bool? shouldUnpublish = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('UNPUBLISH COMMENT'),
+          content: const Text(
+            'This will hide your comment from other users.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('UNPUBLISH'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldUnpublish != true) return;
+
+    try {
+      final repository = ref.read(bookingCommentRepositoryProvider);
+      await repository.unpublishComment(currentComment: comment);
+      if (!context.mounted) return;
+      _invalidateComments(ref, comment);
+      context.showSuccessSnackBar('COMMENT UNPUBLISHED');
+    } catch (e) {
+      if (!context.mounted) return;
+      context.showErrorSnackBar('FAILED TO UNPUBLISH COMMENT: $e');
+    }
+  }
+
+  Future<void> _reportComment(
+    BuildContext context,
+    WidgetRef ref,
+    BookingComment comment,
+  ) async {
+    const reasons = <String>[
+      'SPAM OR SCAM',
+      'HARASSMENT OR HATE',
+      'OBSCENE OR EXPLICIT',
+      'PERSONAL INFORMATION',
+      'OTHER',
+    ];
+
+    final String? reason = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: reasons
+                .map(
+                  (value) => ListTile(
+                    title: Text(value),
+                    onTap: () => Navigator.of(sheetContext).pop(value),
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
+    );
+
+    if (reason == null) return;
+
+    try {
+      final repository = ref.read(bookingCommentRepositoryProvider);
+      await repository.reportComment(comment: comment, reason: reason);
+      if (!context.mounted) return;
+      context.showSuccessSnackBar('COMMENT REPORTED');
+    } catch (e) {
+      if (!context.mounted) return;
+      context.showErrorSnackBar('FAILED TO REPORT COMMENT: $e');
     }
   }
 
@@ -641,6 +827,7 @@ class BookingDetailScreen extends ConsumerWidget {
     bool isLoggedIn,
     JailBooking booking,
     List<JailBooking>? bookingHistory,
+    String? currentUserId,
   ) {
     final styles = context.detailScreenStyles;
     final appColors = context.appColors;
@@ -729,9 +916,11 @@ class BookingDetailScreen extends ConsumerWidget {
           commentsAsync.when(
             data: (comments) => _buildCommentsList(
               context,
+              ref,
               appColors,
               comments,
               bookingHistory,
+              currentUserId,
             ),
             loading: () => const Center(
               child: Padding(
@@ -751,9 +940,11 @@ class BookingDetailScreen extends ConsumerWidget {
 
   Widget _buildCommentsList(
     BuildContext context,
+    WidgetRef ref,
     dynamic appColors,
     List<BookingComment> comments,
     List<JailBooking>? bookingHistory,
+    String? currentUserId,
   ) {
     if (comments.isEmpty) {
       return Text(
@@ -766,9 +957,11 @@ class BookingDetailScreen extends ConsumerWidget {
       children: comments.map((comment) {
         return _buildCommentItem(
           context,
+          ref,
           appColors,
           comment,
           bookingHistory,
+          currentUserId,
         );
       }).toList(),
     );
@@ -776,18 +969,24 @@ class BookingDetailScreen extends ConsumerWidget {
 
   Widget _buildCommentItem(
     BuildContext context,
+    WidgetRef ref,
     dynamic appColors,
     BookingComment comment,
     List<JailBooking>? bookingHistory,
+    String? currentUserId,
   ) {
     final author = (comment.userName == null || comment.userName!.isEmpty)
         ? 'User'
         : comment.userName!;
 
     return InkWell(
-      onTap: bookingHistory == null
-          ? null
-          : () => _openCommentBooking(context, comment, bookingHistory),
+      onTap: () => _showCommentActions(
+        context,
+        ref,
+        comment,
+        bookingHistory,
+        currentUserId,
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
@@ -1080,3 +1279,5 @@ class BookingDetailScreen extends ConsumerWidget {
     ];
   }
 }
+
+enum _CommentAction { edit, unpublish, report, viewBooking }

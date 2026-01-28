@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/app_config.dart';
 import 'providers/auth_providers.dart';
 import 'router/app_router.dart';
 // import 'services/admob_service.dart'; // Disabled - ads removed for App Store submission
@@ -78,24 +78,12 @@ Future<void> _runApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await dotenv
-        .load(fileName: 'assets/.env')
-        .timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            throw Exception('Timeout loading environment variables');
-          },
-        );
+    final String supabaseUrl = AppConfig.supabaseUrl;
+    final String supabaseAnonKey = AppConfig.supabaseAnonKey;
 
-    final String? supabaseUrl = dotenv.env['SUPABASE_URL'];
-    final String? supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
-
-    if (supabaseUrl == null ||
-        supabaseUrl.isEmpty ||
-        supabaseAnonKey == null ||
-        supabaseAnonKey.isEmpty) {
+    if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
       throw Exception(
-        'Missing SUPABASE_URL or SUPABASE_ANON_KEY in assets/.env',
+        'Missing SUPABASE_URL or SUPABASE_ANON_KEY in --dart-define',
       );
     }
 
@@ -223,10 +211,11 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const Text(
-                      'PutnamApp is provided for informational purposes only and displays data from public sources. '
-                      'We make no warranties about accuracy, completeness, or timeliness, and errors may occur. '
-                      'Do not rely on this app as your sole source of truth and do not make decisions based on it. '
-                      'You are responsible for independently verifying information before taking any action, and you assume all risk in relying on this information.',
+                      '- PutnamApp is Provided for Informational Purposes Only.\n'
+                      '- The App Displays Public Sourced Data.\n'
+                      '- No Warranties On Accuracy, Completeness, and Errors.\n'
+                      '- Do Not Rely on This App To Make Decisions.\n'
+                      '- You Are Responsible for Independently Verifying Data.',
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -239,7 +228,7 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
                             });
                           },
                         ),
-                        const Expanded(child: Text('I acknowledge')),
+                        const Expanded(child: Text('I ACKOWLEDGE')),
                       ],
                     ),
                   ],

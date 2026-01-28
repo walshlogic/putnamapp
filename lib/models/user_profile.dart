@@ -4,8 +4,10 @@ class UserProfile {
     required this.id,
     required this.email,
     this.displayName,
+    this.appUserId,
     this.avatarUrl,
     this.isPremium = false,
+    this.commentAnonymous = false,
     this.premiumExpiresAt,
     this.subscriptionTier = 'free',
     this.stripeCustomerId,
@@ -20,8 +22,10 @@ class UserProfile {
   final String id;
   final String email;
   final String? displayName;
+  final String? appUserId;
   final String? avatarUrl;
   final bool isPremium;
+  final bool commentAnonymous;
   final DateTime? premiumExpiresAt;
   final String subscriptionTier; // 'free', 'pro'
   final String? stripeCustomerId;
@@ -38,8 +42,10 @@ class UserProfile {
       id: json['id'] as String,
       email: json['email'] as String,
       displayName: json['display_name'] as String?,
+      appUserId: json['app_user_id'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       isPremium: json['is_premium'] as bool? ?? false,
+      commentAnonymous: json['comment_anonymous'] as bool? ?? false,
       premiumExpiresAt: json['premium_expires_at'] != null
           ? DateTime.parse(json['premium_expires_at'] as String)
           : null,
@@ -66,8 +72,10 @@ class UserProfile {
       'id': id,
       'email': email,
       'display_name': displayName,
+      'app_user_id': appUserId,
       'avatar_url': avatarUrl,
       'is_premium': isPremium,
+      'comment_anonymous': commentAnonymous,
       'premium_expires_at': premiumExpiresAt?.toIso8601String(),
       'subscription_tier': subscriptionTier,
       'stripe_customer_id': stripeCustomerId,
@@ -85,8 +93,10 @@ class UserProfile {
     String? id,
     String? email,
     String? displayName,
+    String? appUserId,
     String? avatarUrl,
     bool? isPremium,
+    bool? commentAnonymous,
     DateTime? premiumExpiresAt,
     String? subscriptionTier,
     String? stripeCustomerId,
@@ -101,8 +111,10 @@ class UserProfile {
       id: id ?? this.id,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
+      appUserId: appUserId ?? this.appUserId,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       isPremium: isPremium ?? this.isPremium,
+      commentAnonymous: commentAnonymous ?? this.commentAnonymous,
       premiumExpiresAt: premiumExpiresAt ?? this.premiumExpiresAt,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       stripeCustomerId: stripeCustomerId ?? this.stripeCustomerId,

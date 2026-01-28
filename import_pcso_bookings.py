@@ -106,7 +106,7 @@ PCSO_SYNC_CHARGES = os.getenv('PCSO_SYNC_CHARGES', 'true').lower() in (
 )
 PCSO_PHOTO_BASE_URL = os.getenv(
     'PCSO_PHOTO_BASE_URL',
-    'https://smartweb.pcso.us/smartwebclient/ViewImage.aspx?bookno=',
+    'https://smartweb.pcso.us/ViewImageFull.aspx?bookno=',
 )
 PCSO_PHOTOS_BUCKET = os.getenv('PCSO_PHOTOS_BUCKET', 'pcso-booking-photos')
 PCSO_SYNC_PHOTOS = os.getenv('PCSO_SYNC_PHOTOS', 'true').lower() in (

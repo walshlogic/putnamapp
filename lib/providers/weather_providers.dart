@@ -1,4 +1,3 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
@@ -7,9 +6,9 @@ import '../repositories/weather_repository.dart';
 
 /// Provider for WeatherRepository
 final weatherRepositoryProvider = Provider<WeatherRepository>((ref) {
-  final double lat = double.tryParse(dotenv.env['WEATHER_LAT'] ?? '') ??
+  final double lat = double.tryParse(AppConfig.weatherLatEnv) ??
       AppConfig.defaultLatitude;
-  final double lon = double.tryParse(dotenv.env['WEATHER_LON'] ?? '') ??
+  final double lon = double.tryParse(AppConfig.weatherLonEnv) ??
       AppConfig.defaultLongitude;
 
   return OpenMeteoWeatherRepository(latitude: lat, longitude: lon);
