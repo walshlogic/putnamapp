@@ -18,10 +18,10 @@ class TrialBanner extends ConsumerWidget {
     return profileAsync.when(
       data: (profile) {
         if (profile == null) return const SizedBox.shrink();
-        
+
         // Only show if user is in trial
         if (!profile.isInTrial) return const SizedBox.shrink();
-        
+
         final remainingHours = profile.remainingTrialHours;
         if (remainingHours == null) return const SizedBox.shrink();
 
@@ -30,10 +30,7 @@ class TrialBanner extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: <Color>[
-                Colors.green.shade50,
-                Colors.blue.shade50,
-              ],
+              colors: <Color>[Colors.green.shade50, Colors.blue.shade50],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -45,11 +42,7 @@ class TrialBanner extends ConsumerWidget {
             bottom: false,
             child: Row(
               children: <Widget>[
-                Icon(
-                  Icons.access_time,
-                  color: Colors.green.shade700,
-                  size: 24,
-                ),
+                Icon(Icons.access_time, color: Colors.green.shade700, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -92,10 +85,7 @@ class TrialBanner extends ConsumerWidget {
                   ),
                   child: const Text(
                     'Subscribe',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -104,8 +94,7 @@ class TrialBanner extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
-

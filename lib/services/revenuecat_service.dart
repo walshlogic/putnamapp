@@ -96,12 +96,13 @@ class RevenueCatService {
       debugPrint('💳 RevenueCat: Purchasing package: ${package.identifier}');
       debugPrint('   Price: ${package.storeProduct.priceString}');
       
-      final purchaserInfo = await Purchases.purchasePackage(package);
-      
+      final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
+      final customerInfo = purchaseResult.customerInfo;
+
       debugPrint('✅ RevenueCat: Purchase successful!');
-      debugPrint('   Active entitlements: ${purchaserInfo.entitlements.active.keys}');
-      
-      return purchaserInfo;
+      debugPrint('   Active entitlements: ${customerInfo.entitlements.active.keys}');
+
+      return customerInfo;
     } on PlatformException catch (e) {
       final errorCode = PurchasesErrorHelper.getErrorCode(e);
       debugPrint('❌ RevenueCat: Purchase failed with code: $errorCode');

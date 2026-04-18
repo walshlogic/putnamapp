@@ -7,7 +7,7 @@ import '../services/admob_service.dart';
 /// Returns true for free users, false for paid users (silver/gold)
 final shouldShowAdsProvider = Provider<bool>((ref) {
   final profileAsync = ref.watch(currentUserProfileProvider);
-  
+
   return profileAsync.when(
     data: (profile) {
       if (profile == null) return true; // Show ads if not logged in
@@ -15,7 +15,7 @@ final shouldShowAdsProvider = Provider<bool>((ref) {
       return profile.isFree;
     },
     loading: () => true, // Show ads while loading (safe default)
-    error: (_, __) => true, // Show ads on error (safe default)
+    error: (_, _) => true, // Show ads on error (safe default)
   );
 });
 
@@ -28,4 +28,3 @@ final admobServiceProvider = Provider<AdMobService>((ref) {
 final interstitialAdManagerProvider = Provider<InterstitialAdManager>((ref) {
   return InterstitialAdManager.instance;
 });
-

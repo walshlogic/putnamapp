@@ -86,7 +86,10 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -97,7 +100,9 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _isSearchExpanded ? 'HIDE SEARCH & FILTERS' : 'SEARCH & FILTERS',
+                      _isSearchExpanded
+                          ? 'HIDE SEARCH & FILTERS'
+                          : 'SEARCH & FILTERS',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -144,15 +149,16 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                       },
                       currentSortField: _filters.sortBy,
                       currentSortDirection: _filters.sortDirection,
-                      onSortChanged: (SortField field, SortDirection direction) {
-                        setState(() {
-                          _filters = _filters.copyWith(
-                            sortBy: field,
-                            sortDirection: direction,
-                          );
-                        });
-                        _closeSearchPanel();
-                      },
+                      onSortChanged:
+                          (SortField field, SortDirection direction) {
+                            setState(() {
+                              _filters = _filters.copyWith(
+                                sortBy: field,
+                                sortDirection: direction,
+                              );
+                            });
+                            _closeSearchPanel();
+                          },
                       onClose: _closeSearchPanel,
                     ),
                   )
@@ -213,17 +219,22 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                                       color: appColors.lightPurple,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: appColors.primaryPurple.withValues(alpha: 0.3),
+                                        color: appColors.primaryPurple
+                                            .withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
-                                    child: o.imageUrl != null && o.imageUrl!.isNotEmpty
+                                    child:
+                                        o.imageUrl != null &&
+                                            o.imageUrl!.isNotEmpty
                                         ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(11),
+                                            borderRadius: BorderRadius.circular(
+                                              11,
+                                            ),
                                             child: Image.network(
                                               o.imageUrl!,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => Icon(
+                                              errorBuilder: (_, _, _) => Icon(
                                                 Icons.person_outline,
                                                 color: appColors.primaryPurple,
                                                 size: 32,
@@ -239,7 +250,8 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: <Widget>[
                                         Text(
                                           o.name.toUpperCase(),
@@ -261,12 +273,14 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                                             const SizedBox(width: 4),
                                             Text(
                                               o.city.toUpperCase(),
-                                              style: styles.detailStyle.copyWith(
-                                                color: appColors.textMedium,
-                                                fontSize: 12,
-                                              ),
+                                              style: styles.detailStyle
+                                                  .copyWith(
+                                                    color: appColors.textMedium,
+                                                    fontSize: 12,
+                                                  ),
                                             ),
-                                            if (o.birthDate != null) ...<Widget>[
+                                            if (o.birthDate !=
+                                                null) ...<Widget>[
                                               const SizedBox(width: 12),
                                               Icon(
                                                 Icons.cake,
@@ -276,15 +290,18 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                                               const SizedBox(width: 4),
                                               Text(
                                                 'AGE ${o.age}',
-                                                style: styles.detailStyle.copyWith(
-                                                  color: appColors.textMedium,
-                                                  fontSize: 12,
-                                                ),
+                                                style: styles.detailStyle
+                                                    .copyWith(
+                                                      color:
+                                                          appColors.textMedium,
+                                                      fontSize: 12,
+                                                    ),
                                               ),
                                             ],
                                           ],
                                         ),
-                                        if (o.status != null && o.status!.isNotEmpty) ...<Widget>[
+                                        if (o.status != null &&
+                                            o.status!.isNotEmpty) ...<Widget>[
                                           const SizedBox(height: 4),
                                           Container(
                                             padding: const EdgeInsets.symmetric(
@@ -292,8 +309,10 @@ class _SexOffenderScreenState extends ConsumerState<SexOffenderScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: appColors.accentOrange.withValues(alpha: 0.2),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: appColors.accentOrange
+                                                  .withValues(alpha: 0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
                                               o.status!.toUpperCase(),

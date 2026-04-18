@@ -89,7 +89,8 @@ def _find_criminal_files():
     criminal_zips = sorted(criminal_zips, key=lambda p: p.stat().st_mtime, reverse=True)
 
     if criminal_zips:
-        criminal_files.extend(extract_criminal_zip(criminal_zips[0], DATA_DIR) or [])
+        for zip_path in criminal_zips:
+            criminal_files.extend(extract_criminal_zip(zip_path, DATA_DIR) or [])
     else:
         criminal_files.extend(list(DATA_DIR.glob('criminal_*.txt')))
         criminal_files.extend(list(DATA_DIR.glob('criminal_*.csv')))

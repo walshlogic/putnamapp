@@ -51,11 +51,17 @@ class BookingDetailScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: <Widget>[
-                // Large photo (tappable to enlarge)
+                // Large photo — taps to progression if multiple bookings, else enlarges
                 Center(
                   child: GestureDetector(
                     onTap: () {
-                      // Show enlarged photo in dialog
+                      if (bookingHistory != null && bookingHistory.length > 1) {
+                        context.pushNamed(
+                          RouteNames.bookingPhotoProgression,
+                          extra: booking,
+                        );
+                        return;
+                      }
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
@@ -63,7 +69,6 @@ class BookingDetailScreen extends ConsumerWidget {
                             backgroundColor: Colors.transparent,
                             child: Stack(
                               children: <Widget>[
-                                // Enlarged photo
                                 Center(
                                   child: GestureDetector(
                                     onTap: () => Navigator.of(context).pop(),
@@ -100,7 +105,6 @@ class BookingDetailScreen extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
-                                // Close button
                                 Positioned(
                                   top: 40,
                                   right: 20,
@@ -152,59 +156,43 @@ class BookingDetailScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                // OPTIONAL: Photo progression entry point (hide if no prior bookings)
-                allBookings.when(
-                  data: (List<JailBooking> allBookingsList) {
-                    final bool hasPriorBooking = allBookingsList.any(
-                      (JailBooking b) => b.bookingNo != booking.bookingNo,
-                    );
-                    if (!hasPriorBooking) {
-                      return const SizedBox.shrink();
-                    }
-                    final int totalPhotos = allBookingsList.length;
-                    return TextButton(
-                      style: TextButton.styleFrom(
+                const SizedBox(height: 4),
+                Center(
+                  child: allBookings.when(
+                    data: (List<JailBooking> allBookingsList) {
+                      final bool hasMultiple = allBookingsList.length > 1;
+                      return IconButton(
+                        iconSize: 80,
                         padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () {
-                        context.pushNamed(
-                          RouteNames.bookingPhotoProgression,
-                          extra: booking,
-                        );
-                      },
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            'MUGSHOT SHOW',
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  color: appColors.primaryPurple,
-                                  letterSpacing: 0.6,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '($totalPhotos PHOTOS)',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: appColors.primaryPurple,
-                                  letterSpacing: 0.4,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (Object _, StackTrace __) => const SizedBox.shrink(),
+                        constraints: const BoxConstraints(
+                          minWidth: 80,
+                          minHeight: 80,
+                        ),
+                        tooltip: hasMultiple
+                            ? 'Play mugshot progression'
+                            : 'No additional photos',
+                        icon: Icon(
+                          Icons.play_circle_outline,
+                          color: hasMultiple
+                              ? appColors.primaryPurple
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.25),
+                        ),
+                        onPressed: hasMultiple
+                            ? () => context.pushNamed(
+                                  RouteNames.bookingPhotoProgression,
+                                  extra: booking,
+                                )
+                            : null,
+                      );
+                    },
+                    loading: () => const SizedBox(height: 80),
+                    error: (Object _, StackTrace _) =>
+                        const SizedBox(height: 80),
+                  ),
                 ),
-                const SizedBox(height: 16),
 
                 // Personal Info Card
                 _buildSectionCard(
@@ -270,7 +258,7 @@ class BookingDetailScreen extends ConsumerWidget {
                         );
                       },
                       loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -656,7 +644,8 @@ class BookingDetailScreen extends ConsumerWidget {
     List<JailBooking>? bookingHistory,
     String? currentUserId,
   ) async {
-    final bool isOwner = currentUserId != null && currentUserId == comment.userId;
+    final bool isOwner =
+        currentUserId != null && currentUserId == comment.userId;
     final _CommentAction? action = await showModalBottomSheet<_CommentAction>(
       context: context,
       showDragHandle: true,
@@ -689,8 +678,9 @@ class BookingDetailScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.open_in_new),
                   title: const Text('VIEW BOOKING'),
-                  onTap: () =>
-                      Navigator.of(sheetContext).pop(_CommentAction.viewBooking),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_CommentAction.viewBooking),
                 ),
             ],
           ),
@@ -743,9 +733,7 @@ class BookingDetailScreen extends ConsumerWidget {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('UNPUBLISH COMMENT'),
-          content: const Text(
-            'This will hide your comment from other users.',
-          ),
+          content: const Text('This will hide your comment from other users.'),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -864,19 +852,17 @@ class BookingDetailScreen extends ConsumerWidget {
         commentsAsync.when(
           data: (comments) => Text(
             '${comments.length}',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: appColors.primaryPurple),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: appColors.primaryPurple),
           ),
           loading: () => Text(
             '...',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: appColors.primaryPurple),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: appColors.primaryPurple),
           ),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
         TextButton.icon(
@@ -899,10 +885,7 @@ class BookingDetailScreen extends ConsumerWidget {
 
     if (!hasComments) {
       return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: header,
-        ),
+        child: Padding(padding: const EdgeInsets.all(20), child: header),
       );
     }
 
@@ -1007,7 +990,11 @@ class BookingDetailScreen extends ConsumerWidget {
                       ? NetworkImage(comment.userPhotoUrl!)
                       : null,
                   child: comment.userPhotoUrl == null
-                      ? Icon(Icons.person, size: 16, color: appColors.primaryPurple)
+                      ? Icon(
+                          Icons.person,
+                          size: 16,
+                          color: appColors.primaryPurple,
+                        )
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -1022,9 +1009,9 @@ class BookingDetailScreen extends ConsumerWidget {
                 ),
                 Text(
                   comment.timeAgo,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: appColors.textLight,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: appColors.textLight),
                 ),
               ],
             ),

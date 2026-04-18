@@ -13,7 +13,7 @@ final lastViewedJailLogProvider = FutureProvider<DateTime?>((ref) async {
   return storageAsync.when(
     data: (storage) => storage.getDateTime(_lastViewedJailLogKey),
     loading: () => null,
-    error: (_, __) => null,
+    error: (_, _) => null,
   );
 });
 
@@ -47,7 +47,6 @@ final hasNewBookingsProvider = FutureProvider<bool>((ref) async {
       return mostRecentDate.isAfter(lastViewedAsync);
     },
     loading: () => false,
-    error: (_, __) => false,
+    error: (_, _) => false,
   );
 });
-

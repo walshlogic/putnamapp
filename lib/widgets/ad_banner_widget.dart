@@ -16,16 +16,16 @@ class AdBannerWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentUserProfileProvider);
-    
+
     return profileAsync.when(
       data: (profile) {
         if (profile == null) return const SizedBox.shrink();
-        
+
         // Gold users: No ads!
         if (profile.isGold) {
           return const SizedBox.shrink();
         }
-        
+
         // Silver users: Reduced ads (show smaller banner)
         if (profile.isSilver) {
           return AdMobBannerWidget(
@@ -33,15 +33,12 @@ class AdBannerWidget extends ConsumerWidget {
             shouldShowAd: true,
           );
         }
-        
+
         // Free users: Full ad banner
-        return AdMobBannerWidget(
-          height: height,
-          shouldShowAd: true,
-        );
+        return AdMobBannerWidget(height: height, shouldShowAd: true);
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -104,9 +101,9 @@ class PremiumUpgradePrompt extends ConsumerWidget {
                 Text(
                   'Go Ad-Free!',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber.shade900,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade900,
+                  ),
                 ),
               ],
             ),
@@ -132,4 +129,3 @@ class PremiumUpgradePrompt extends ConsumerWidget {
     );
   }
 }
-
