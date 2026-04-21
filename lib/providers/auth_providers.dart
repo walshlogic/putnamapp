@@ -82,12 +82,6 @@ final isPremiumUserProvider = Provider<bool>((ref) {
   );
 });
 
-/// Provider for checking if user should see ads
-final shouldShowAdsProvider = Provider<bool>((ref) {
-  final isPremium = ref.watch(isPremiumUserProvider);
-  return !isPremium;
-});
-
 /// Provider for user subscription tier (returns 'free', 'silver', or 'gold')
 final subscriptionTierProvider = Provider<String>((ref) {
   final profileAsync = ref.watch(currentUserProfileProvider);

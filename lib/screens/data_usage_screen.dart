@@ -52,7 +52,7 @@ class DataUsageScreen extends ConsumerWidget {
                   context,
                   appColors,
                   'SUMMARY',
-                  'Putnam.app uses data to provide app features, improve performance, '
+                  'Putnam+Life uses data to provide app features, improve performance, '
                       'and support account-related services. We do not sell personal '
                       'information.',
                 ),

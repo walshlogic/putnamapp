@@ -461,7 +461,7 @@ class AppTheme {
         elevation: 0,
         titleTextStyle: TextStyle(
           fontSize:
-              18.0, // Adjust AppBar title font size here (affects "PUTNAM.APP" and all screen titles)
+              18.0, // Adjust AppBar title font size here (affects "Putnam+Life" and all screen titles)
           fontWeight: FontWeight.bold,
           color: Colors.white, // White text for contrast on purple background
         ),

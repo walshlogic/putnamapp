@@ -64,14 +64,14 @@ class TermsOfUseScreen extends ConsumerWidget {
                   context,
                   appColors,
                   '1. AGREEMENT TO TERMS',
-                  'By downloading, installing, accessing, or using Putnam.app (the "App"), you agree to be bound by these Terms of Use ("Terms"). If you do not agree to these Terms, do not use the App. We may modify these Terms at any time, and such modifications shall be effective immediately upon posting.',
+                  'By downloading, installing, accessing, or using Putnam+Life (the "App"), you agree to be bound by these Terms of Use ("Terms"). If you do not agree to these Terms, do not use the App. We may modify these Terms at any time, and such modifications shall be effective immediately upon posting.',
                 ),
 
                 _buildSection(
                   context,
                   appColors,
                   '2. DESCRIPTION OF SERVICE',
-                  'Putnam.app provides access to public records and information from Putnam County, Florida, including but not limited to:\n\n'
+                  'Putnam+Life provides access to public records and information from Putnam County, Florida, including but not limited to:\n\n'
                   '• Jail bookings and arrest records\n'
                   '• Traffic citations\n'
                   '• Criminal history records\n'
@@ -138,7 +138,7 @@ class TermsOfUseScreen extends ConsumerWidget {
                   context,
                   appColors,
                   '7. INTELLECTUAL PROPERTY',
-                  'The App and its original content, features, and functionality are owned by Putnam.app and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws. You may not reproduce, distribute, modify, create derivative works of, publicly display, or otherwise exploit the App or its content without our express written permission.',
+                  'The App and its original content, features, and functionality are owned by Putnam+Life and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws. You may not reproduce, distribute, modify, create derivative works of, publicly display, or otherwise exploit the App or its content without our express written permission.',
                 ),
 
                 _buildSection(
@@ -152,14 +152,14 @@ class TermsOfUseScreen extends ConsumerWidget {
                   context,
                   appColors,
                   '9. LIMITATION OF LIABILITY',
-                  'TO THE MAXIMUM EXTENT PERMITTED BY LAW, PUTNAM.APP SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM YOUR USE OF THE APP.',
+                  'TO THE MAXIMUM EXTENT PERMITTED BY LAW, Putnam+Life SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM YOUR USE OF THE APP.',
                 ),
 
                 _buildSection(
                   context,
                   appColors,
                   '10. INDEMNIFICATION',
-                  'You agree to indemnify, defend, and hold harmless Putnam.app, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses, including reasonable attorneys\' fees, arising out of or in any way connected with your access to or use of the App or violation of these Terms.',
+                  'You agree to indemnify, defend, and hold harmless Putnam+Life, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses, including reasonable attorneys\' fees, arising out of or in any way connected with your access to or use of the App or violation of these Terms.',
                 ),
 
                 _buildSection(

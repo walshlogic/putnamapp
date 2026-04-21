@@ -21,7 +21,6 @@ import '../widgets/cards/news_card.dart';
 import '../widgets/cards/weather_card.dart';
 import '../widgets/putnam_app_bar.dart';
 import '../widgets/settings_drawer.dart';
-import '../widgets/trial_banner.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -38,8 +37,6 @@ class HomePage extends ConsumerWidget {
       endDrawer: const SettingsDrawer(),
       body: Column(
         children: <Widget>[
-          // Trial banner (shows when user is in trial)
-          const TrialBanner(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {

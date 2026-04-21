@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../exceptions/app_exceptions.dart';
@@ -119,20 +124,54 @@ class AuthService {
     }
   }
 
-  /// Sign in with Apple
+  /// Sign in with Apple (native iOS flow)
   Future<bool> signInWithApple() async {
     try {
-      final bool result = await _client.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: 'io.supabase.putnamapp://login-callback',
+      // Generate a cryptographically-random nonce, then hash it with SHA-256.
+      // Apple expects the SHA-256 hash as the `nonce` param; Supabase requires
+      // the raw nonce for verification.
+      final String rawNonce = _generateNonce();
+      final String hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      final AuthorizationCredentialAppleID credential =
+          await SignInWithApple.getAppleIDCredential(
+        scopes: <AppleIDAuthorizationScopes>[
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
       );
 
-      return result;
+      final String? idToken = credential.identityToken;
+      if (idToken == null) {
+        throw AuthenticationException('No ID token returned from Apple.');
+      }
+
+      final AuthResponse response = await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+
+      return response.user != null;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // User canceled or another Apple-side error
+      throw AuthenticationException('Apple sign-in: ${e.message}');
     } on AuthException catch (e) {
       throw AuthenticationException(e.message);
     } catch (e) {
       throw AuthenticationException('Failed to sign in with Apple: $e');
     }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const String charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final Random random = Random.secure();
+    return List<String>.generate(
+      length,
+      (int _) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 
   /// Sign out

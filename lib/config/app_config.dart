@@ -1,7 +1,7 @@
 /// Application-wide configuration constants
 class AppConfig {
   // App Information
-  static const String appName = 'PUTNAM.APP';
+  static const String appName = 'PUTNAM+LIFE';
   static const String appSubtitle = 'LOCAL INFORMATION HUB';
 
   // Supabase Table Names

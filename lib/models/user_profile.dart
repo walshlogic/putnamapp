@@ -204,9 +204,6 @@ extension UserProfileExtension on UserProfile {
     return premiumExpiresAt!.isAfter(DateTime.now());
   }
 
-  /// Check if user should see ads (backwards compatible - no ads in trial or subscription)
-  bool get shouldShowAds => !hasActivePremium;
-
   /// Check if user needs to subscribe (trial expired and no subscription)
   bool get needsSubscription {
     return !hasActivePremium && !isInTrial;

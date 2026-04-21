@@ -22,103 +22,95 @@ class BookingListItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              // Photo
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  booking.photoUrl,
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                  cacheWidth: 120, // Cache at 2x for retina, but limit memory
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: context.appColors.lightPurple,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: context.appColors.primaryPurple,
-                        size: 30,
-                      ),
-                    );
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: context.appColors.lightPurple,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                          strokeWidth: 2,
-                          color: context.appColors.primaryPurple,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Booking details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      booking.bookingDateString,
-                      style: styles.subtitleStyle.copyWith(
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            // Photo — fixed large size, flush to card edge
+            SizedBox(
+              width: 150,
+              height: 150,
+              child: Image.network(
+                booking.photoUrl,
+                fit: BoxFit.cover,
+                cacheWidth: 300,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: appColors.lightPurple,
+                    child: Icon(
+                      Icons.person,
+                      color: appColors.primaryPurple,
+                      size: 60,
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: appColors.lightPurple,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        strokeWidth: 2,
                         color: appColors.primaryPurple,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      booking.name,
-                      style: styles.nameStyle.copyWith(
-                        color: appColors.textDark,
+                  );
+                },
+              ),
+            ),
+
+              // Booking details — only this side has margin
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        booking.bookingDateString,
+                        style: styles.subtitleStyle.copyWith(
+                          color: appColors.primaryPurple,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      booking.charges.join(', ').toUpperCase(),
-                      style: styles.detailStyle.copyWith(
-                        color: appColors.textMedium,
+                      const SizedBox(height: 4),
+                      Text(
+                        booking.name,
+                        style: styles.nameStyle.copyWith(
+                          color: appColors.textDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        booking.charges.join(', ').toUpperCase(),
+                        style: styles.detailStyle.copyWith(
+                          color: appColors.textMedium,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               // Chevron icon
-              Icon(
-                Icons.chevron_right,
-                color: appColors.divider,
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: appColors.divider,
+                ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
-

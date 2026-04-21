@@ -6,6 +6,13 @@ assets/.env
 .env.*.local
 flutter_env.json
 
+# Data drops — downloaded source files, never commit
+zFDLEUpdate/*.csv
+zFDLEUpdate/*.zip
+zClerkDataUpdate/*.zip
+zClerkDataUpdate/*.csv
+zClerkDataUpdate/*.txt
+
 # Build files
 build/
 *.iml
