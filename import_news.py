@@ -1,404 +1,392 @@
 #!/usr/bin/env python3
 """
-Import news articles from NewsAPI.org into Supabase.
+Import local-first news for the Putnam+Life app.
 
-This script fetches news articles from NewsAPI and stores them in Supabase.
-It respects API rate limits and uses UPSERT to avoid duplicates.
+Strategy: Google News RSS with tiered queries.
+  Tier 1: Putnam County FL (hyper-local)
+  Tier 2: Northeast Florida
+  Tier 3: Central Florida
+  Tier 4: State of Florida
+  Tier 5: US national headlines
 
-Requirements:
-- pip install supabase python-dotenv requests
+Deduplicates across tiers (higher tier wins), filters to US-only sources,
+lazy-fetches og:image for new articles, prunes each tier to the N most
+recent articles.
 
-Environment Variables:
-- SUPABASE_URL: Your Supabase project URL
-- SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key (for bypassing RLS)
-- NEWSAPI_KEY: Your NewsAPI.org API key (get free at https://newsapi.org)
+Environment:
+  SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — required
+  NEWS_KEEP_PER_TIER — optional, default 200
+  NEWS_IMAGE_TIMEOUT_SEC — optional, default 6
+  NEWS_IMAGE_FETCH_BUDGET_SEC — optional, default 300 (cap total image time)
 
 Usage:
-    python3 import_news.py [--categories general,technology,business] [--country us] [--limit 100]
+  python3 import_news.py               # normal run
+  python3 import_news.py --dry-run     # parse + report, no DB writes
+  python3 import_news.py --no-images   # skip og:image fetch
 """
-
-import os
-import sys
-import json
-import logging
 import argparse
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
-from urllib.parse import quote
-
-import requests
-from supabase import create_client, Client
-from dotenv import load_dotenv
+import hashlib
+import html
+import logging
+import os
+import re
+import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+from urllib.parse import quote, urlparse
 
-# =====================================================
-# LOAD ENVIRONMENT VARIABLES
-# =====================================================
+import feedparser
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from supabase import Client, create_client
 
 script_dir = Path(__file__).parent
 env_path = script_dir / 'assets' / '.env'
-
 if env_path.exists():
     load_dotenv(env_path)
-    print(f'✅ Loaded environment variables from {env_path}')
 else:
     load_dotenv()
-    print('⚠️  assets/.env not found, trying current directory .env')
 
-# Configure logging
+(script_dir / 'logs').mkdir(exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(script_dir / 'logs' / 'news_import.log'),
+        logging.StreamHandler(sys.stdout),
+    ],
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('news')
 
-# NewsAPI configuration
-NEWSAPI_BASE_URL = 'https://newsapi.org/v2'
-NEWSAPI_SOURCE_ID = 'newsapi'
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+KEEP_PER_TIER = int(os.getenv('NEWS_KEEP_PER_TIER', '200'))
+IMAGE_TIMEOUT_SEC = int(os.getenv('NEWS_IMAGE_TIMEOUT_SEC', '6'))
+IMAGE_BUDGET_SEC = int(os.getenv('NEWS_IMAGE_FETCH_BUDGET_SEC', '300'))
 
-# Default categories to fetch
-DEFAULT_CATEGORIES = ['general', 'technology', 'business', 'health', 'science', 'sports', 'entertainment']
+USER_AGENT = (
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+)
 
-# Default countries
-DEFAULT_COUNTRIES = ['us']
+SOURCE_ID = 'google_news_rss'
+SOURCE_NAME = 'Google News RSS'
 
-# Default article limit per category
-DEFAULT_LIMIT = 100
+# tier_number → (category_label, display_name, full Google News RSS URL)
+# Tiers 1-4 are search queries for regional specificity.
+# Tier 5 uses the NATION topic endpoint (US domestic news only; excludes WORLD/international).
+_NEWS_BASE = 'https://news.google.com/rss'
+_QP = '&hl=en-US&gl=US&ceid=US:en'
 
+TIERS: List[Tuple[int, str, str, str]] = [
+    (1, 'local_putnam',    'Putnam County',
+     f'{_NEWS_BASE}/search?q={quote("\"Putnam County\" Florida OR Palatka OR Interlachen OR Welaka OR \"Crescent City\"")}{_QP}'),
+    (2, 'ne_florida',      'Northeast Florida',
+     f'{_NEWS_BASE}/search?q={quote("\"Northeast Florida\" OR Jacksonville OR \"St. Johns County\" OR \"Clay County\" OR \"Flagler County\" OR \"Duval County\"")}{_QP}'),
+    (3, 'central_florida', 'Central Florida',
+     f'{_NEWS_BASE}/search?q={quote("\"Central Florida\" OR Orlando OR \"Marion County Florida\" OR \"Lake County Florida\" OR \"Volusia County\"")}{_QP}'),
+    (4, 'state_florida',   'State of Florida',
+     f'{_NEWS_BASE}/search?q={quote("Florida state government OR \"Florida Legislature\" OR \"Ron DeSantis\"")}{_QP}'),
+    (5, 'us_headlines',    'US National',
+     f'{_NEWS_BASE}/headlines/section/topic/NATION?{_QP.lstrip("&")}'),
+]
 
-def get_supabase_client() -> Client:
-    """Initialize and return Supabase client."""
-    supabase_url = os.getenv('SUPABASE_URL', '')
-    supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
-    
-    if not supabase_url or not supabase_key:
-        raise ValueError(
-            'Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY\n'
-            'Please set these in assets/.env file'
-        )
-    
-    return create_client(supabase_url, supabase_key)
+# Drop articles whose source domain ends in one of these TLDs (non-US feeds).
+_NON_US_TLD_BLOCK = {
+    '.ca', '.uk', '.au', '.nz', '.in', '.ru', '.cn', '.jp', '.kr', '.de',
+    '.fr', '.it', '.es', '.mx', '.br', '.ar', '.cl', '.ng', '.za', '.ie',
+}
 
-
-def get_newsapi_key() -> str:
-    """Get NewsAPI key from environment."""
-    api_key = os.getenv('NEWSAPI_KEY')
-    if not api_key:
-        raise ValueError('Missing required environment variable: NEWSAPI_KEY')
-    return api_key
-
-
-def ensure_news_source(supabase: Client) -> str:
-    """Ensure news source exists in database, return source UUID."""
-    # Check if source exists
-    response = supabase.table('news_sources').select('id').eq('source_id', NEWSAPI_SOURCE_ID).execute()
-    
-    if response.data:
-        return response.data[0]['id']
-    
-    # Create source if it doesn't exist
-    source_data = {
-        'source_id': NEWSAPI_SOURCE_ID,
-        'name': 'NewsAPI',
-        'description': 'NewsAPI.org - Free news API',
-        'url': 'https://newsapi.org',
-        'category': 'general',
-        'language': 'en',
-        'country': 'us'
-    }
-    
-    response = supabase.table('news_sources').insert(source_data).execute()
-    if not response.data:
-        raise Exception('Failed to create news source')
-    
-    logger.info(f"Created news source: {NEWSAPI_SOURCE_ID}")
-    return response.data[0]['id']
+# Foreign outlets that use .com domains — blocklist by name (case-insensitive substring).
+_NON_US_OUTLETS = {
+    'the guardian', 'guardian',
+    'bbc', 'bbc news',
+    'al jazeera', 'aljazeera',
+    'financial times', 'ft.com',
+    'france 24', 'france24',
+    'deutsche welle', 'dw news',
+    'rt news', 'russia today', 'sputnik',
+    'south china morning post', 'scmp',
+    'the globe and mail', 'globe and mail',
+    'cbc news', 'ctv news',
+    'the times of india', 'times of india',
+    'xinhua', "people's daily",
+    'daily mail', 'the sun',
+    'the telegraph', 'daily telegraph',
+    'reuters uk',
+    'dw.com',
+}
 
 
-def fetch_top_headlines(
-    api_key: str,
-    category: Optional[str] = None,
-    country: str = 'us',
-    page_size: int = 100,
-    page: int = 1
-) -> List[Dict[str, Any]]:
-    """
-    Fetch top headlines from NewsAPI.
-    
-    Args:
-        api_key: NewsAPI API key
-        category: News category (general, technology, business, etc.)
-        country: Country code (us, gb, etc.)
-        page_size: Number of articles per page (max 100)
-        page: Page number
-    
-    Returns:
-        List of article dictionaries
-    """
-    url = f'{NEWSAPI_BASE_URL}/top-headlines'
-    params = {
-        'apiKey': api_key,
-        'country': country,
-        'pageSize': min(page_size, 100),  # NewsAPI max is 100
-        'page': page
-    }
-    
-    if category:
-        params['category'] = category
-    
+def external_id_from_url(url: str) -> str:
+    """Stable hash of a URL for dedup + external_id column."""
+    return hashlib.sha1(url.encode('utf-8')).hexdigest()[:32]
+
+
+def normalize_title(title: str) -> str:
+    """Lowercased, punctuation-stripped title for similarity dedup."""
+    t = re.sub(r'\s+-\s+[^-]+$', '', title or '')
+    t = re.sub(r'[^\w\s]', ' ', t.lower())
+    t = re.sub(r'\s+', ' ', t).strip()
+    return t
+
+
+def is_us_source(link: str, outlet: str = '') -> bool:
     try:
-        logger.info(f"Fetching headlines: category={category}, country={country}, page={page}")
-        response = requests.get(url, params=params, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        
-        if data.get('status') != 'ok':
-            raise Exception(f"NewsAPI returned error: {data.get('message', 'Unknown error')}")
-        
-        articles = data.get('articles', [])
-        logger.info(f"Fetched {len(articles)} articles")
-        
-        return articles
-    
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching headlines: {e}")
-        raise
+        host = urlparse(link).hostname or ''
+    except Exception:
+        return False
+    host = host.lower()
+    for tld in _NON_US_TLD_BLOCK:
+        if host.endswith(tld):
+            return False
+    outlet_lc = (outlet or '').lower().strip()
+    if outlet_lc:
+        for bad in _NON_US_OUTLETS:
+            if bad in outlet_lc:
+                return False
+    return True
 
 
-def normalize_article(article: Dict[str, Any], source_uuid: str, category: str) -> Dict[str, Any]:
-    """
-    Normalize article data from NewsAPI format to our schema.
-    
-    Args:
-        article: Raw article data from NewsAPI
-        source_uuid: UUID of the news source
-        category: Article category
-    
-    Returns:
-        Normalized article dictionary
-    """
-    # Use url as external_id (NewsAPI doesn't provide a unique ID)
-    external_id = article.get('url', '')
-    if not external_id:
-        # Fallback: create ID from title and publishedAt
-        title = article.get('title', '')[:50]
-        published = article.get('publishedAt', '')
-        external_id = f"{title}_{published}"
-    
-    # Parse published date
-    published_at = article.get('publishedAt')
-    if published_at:
-        try:
-            # NewsAPI format: 2024-01-15T10:30:00Z
-            published_at = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
-        except Exception as e:
-            logger.warning(f"Failed to parse publishedAt '{published_at}': {e}")
-            published_at = datetime.now()
-    else:
-        published_at = datetime.now()
-    
-    # Extract tags from title/description (simple keyword extraction)
-    tags = []
-    title_lower = (article.get('title') or '').lower()
-    description_lower = (article.get('description') or '').lower()
-    
-    # Common keywords to extract as tags
-    keywords = ['breaking', 'update', 'alert', 'breaking news', 'live', 'exclusive']
-    for keyword in keywords:
-        if keyword in title_lower or keyword in description_lower:
-            tags.append(keyword)
-    
-    # Add category as tag
-    if category:
-        tags.append(category)
-    
-    normalized = {
-        'source_id': source_uuid,
-        'external_id': external_id,
-        'title': article.get('title', 'No Title'),
-        'description': article.get('description'),
-        'content': article.get('content'),  # May be truncated
-        'url': article.get('url', ''),
-        'image_url': article.get('urlToImage'),
-        'author': article.get('author'),
-        'published_at': published_at.isoformat(),
-        'category': category or 'general',
-        'tags': tags if tags else None,
+def parse_feed(url: str, tier: int, category: str) -> List[Dict[str, Any]]:
+    try:
+        resp = requests.get(url, headers={'User-Agent': USER_AGENT}, timeout=30)
+        resp.raise_for_status()
+    except Exception as exc:
+        logger.warning('feed fetch failed tier=%d: %s', tier, exc)
+        return []
+    d = feedparser.parse(resp.content)
+    items: List[Dict[str, Any]] = []
+    for entry in d.entries:
+        link = entry.get('link', '').strip()
+        if not link:
+            continue
+        title_raw = html.unescape(entry.get('title', '') or '').strip()
+        if not title_raw:
+            continue
+        m = re.search(r'^(.*)\s-\s([^-]+)$', title_raw)
+        if m:
+            title_clean, outlet = m.group(1).strip(), m.group(2).strip()
+        else:
+            title_clean, outlet = title_raw, (entry.get('source', {}).get('title') or '')
+        src = entry.get('source', {}).get('href') or entry.get('source', {}).get('url') or ''
+        if not is_us_source(src or link, outlet):
+            continue
+        desc_html = entry.get('summary', '') or ''
+        desc_text = BeautifulSoup(desc_html, 'html.parser').get_text(' ', strip=True)
+        published = None
+        if getattr(entry, 'published_parsed', None):
+            try:
+                published = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc).isoformat()
+            except Exception:
+                pass
+        items.append({
+            'title': title_clean,
+            'description': desc_text[:500] if desc_text else None,
+            'url': link,
+            'source_url': src,
+            'author': outlet or None,
+            'published_at': published,
+            'category': category,
+            'tier': tier,
+            'norm_title': normalize_title(title_clean),
+            'external_id': external_id_from_url(link),
+            'language': 'en',
+            'country': 'us',
+        })
+    logger.info('tier=%d fetched %d items', tier, len(items))
+    return items
+
+
+def dedup_articles(by_tier: Dict[int, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    """Keep one article per (normalized_title | external_id). Higher tier wins."""
+    seen_urls: Set[str] = set()
+    seen_titles: Set[str] = set()
+    out: List[Dict[str, Any]] = []
+    for tier in sorted(by_tier.keys()):
+        for a in by_tier[tier]:
+            if a['external_id'] in seen_urls:
+                continue
+            if a['norm_title'] in seen_titles:
+                continue
+            seen_urls.add(a['external_id'])
+            seen_titles.add(a['norm_title'])
+            out.append(a)
+    return out
+
+
+def fetch_og_image(url: str, timeout: int = IMAGE_TIMEOUT_SEC) -> Optional[str]:
+    try:
+        resp = requests.get(
+            url, headers={'User-Agent': USER_AGENT}, timeout=timeout,
+            allow_redirects=True,
+        )
+        if resp.status_code != 200 or 'html' not in resp.headers.get('content-type', ''):
+            return None
+        soup = BeautifulSoup(resp.content, 'html.parser')
+        for prop in ('og:image', 'twitter:image', 'og:image:secure_url'):
+            tag = soup.find('meta', attrs={'property': prop}) or soup.find('meta', attrs={'name': prop})
+            if tag and tag.get('content'):
+                return tag['content'].strip()
+    except Exception:
+        return None
+    return None
+
+
+def upsert_source(sb: Client) -> str:
+    """Ensure the single catch-all source row exists; return its UUID id."""
+    existing = sb.table('news_sources').select('id').eq('source_id', SOURCE_ID).limit(1).execute().data
+    if existing:
+        return existing[0]['id']
+    row = sb.table('news_sources').insert({
+        'source_id': SOURCE_ID,
+        'name': SOURCE_NAME,
+        'description': 'Aggregated tiered queries against Google News RSS (local→regional→state→national).',
+        'url': 'https://news.google.com/',
+        'category': 'aggregator',
         'language': 'en',
         'country': 'us',
-    }
-    
-    return normalized
+    }).execute().data
+    return row[0]['id']
 
 
-def deduplicate_batch(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Remove duplicate articles within a batch based on external_id.
-    
-    Args:
-        articles: List of article dictionaries
-    
-    Returns:
-        Deduplicated list
-    """
-    seen = set()
-    unique = []
-    duplicates = 0
-    
-    for article in articles:
-        external_id = article.get('external_id', '')
-        if external_id and external_id not in seen:
-            seen.add(external_id)
-            unique.append(article)
-        else:
-            duplicates += 1
-    
-    if duplicates > 0:
-        logger.info(f"Removed {duplicates} duplicate articles from batch")
-    
-    return unique
+def get_existing_external_ids(sb: Client) -> Set[str]:
+    ids: Set[str] = set()
+    page = 0
+    size = 1000
+    while True:
+        data = sb.table('news_articles').select('external_id').range(page * size, page * size + size - 1).execute().data
+        if not data:
+            break
+        for r in data:
+            if r.get('external_id'):
+                ids.add(r['external_id'])
+        if len(data) < size:
+            break
+        page += 1
+    return ids
 
 
-def upsert_articles(supabase: Client, articles: List[Dict[str, Any]]) -> tuple[int, int]:
-    """
-    Upsert articles into Supabase.
-    
-    Args:
-        supabase: Supabase client
-        articles: List of normalized article dictionaries
-    
-    Returns:
-        Tuple of (inserted_count, updated_count)
-    """
-    if not articles:
-        return 0, 0
-    
-    # Deduplicate batch
-    articles = deduplicate_batch(articles)
-    
-    inserted = 0
-    updated = 0
-    errors = 0
-    
-    # Process in batches of 100 (Supabase limit)
-    batch_size = 100
-    for i in range(0, len(articles), batch_size):
-        batch = articles[i:i + batch_size]
-        
-        try:
-            # Upsert using source_id + external_id as unique constraint
-            response = supabase.table('news_articles').upsert(
-                batch,
-                on_conflict='source_id,external_id'
-            ).execute()
-            
-            # Count new vs updated (approximate - Supabase doesn't return this directly)
-            # We'll assume all are inserts for simplicity
-            inserted += len(batch)
-            logger.info(f"Upserted batch of {len(batch)} articles")
-        
-        except Exception as e:
-            logger.error(f"Error upserting batch: {e}")
-            errors += len(batch)
-    
-    if errors > 0:
-        logger.warning(f"Failed to upsert {errors} articles")
-    
-    return inserted, updated
+def prune_per_tier(sb: Client, category: str, keep: int = KEEP_PER_TIER) -> int:
+    rows = (
+        sb.table('news_articles')
+        .select('id, published_at')
+        .eq('category', category)
+        .order('published_at', desc=True)
+        .limit(10000)
+        .execute().data
+    )
+    if len(rows) <= keep:
+        return 0
+    to_delete = [r['id'] for r in rows[keep:]]
+    deleted = 0
+    for i in range(0, len(to_delete), 100):
+        chunk = to_delete[i:i + 100]
+        sb.table('news_articles').delete().in_('id', chunk).execute()
+        deleted += len(chunk)
+    return deleted
 
 
 def main():
-    """Main function to fetch and import news articles."""
-    parser = argparse.ArgumentParser(description='Import news articles from NewsAPI')
-    parser.add_argument(
-        '--categories',
-        type=str,
-        default=','.join(DEFAULT_CATEGORIES),
-        help='Comma-separated list of categories (default: general,technology,business,health,science,sports,entertainment)'
-    )
-    parser.add_argument(
-        '--country',
-        type=str,
-        default='us',
-        help='Country code (default: us)'
-    )
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=DEFAULT_LIMIT,
-        help='Maximum articles per category (default: 100)'
-    )
-    
-    args = parser.parse_args()
-    
-    categories = [c.strip() for c in args.categories.split(',')]
-    
-    try:
-        # Initialize clients
-        logger.info("Initializing Supabase client...")
-        supabase = get_supabase_client()
-        
-        logger.info("Getting NewsAPI key...")
-        api_key = get_newsapi_key()
-        
-        # Ensure news source exists
-        logger.info("Ensuring news source exists...")
-        source_uuid = ensure_news_source(supabase)
-        
-        total_fetched = 0
-        total_inserted = 0
-        
-        # Fetch articles for each category
-        for category in categories:
-            logger.info(f"\n{'='*60}")
-            logger.info(f"Processing category: {category}")
-            logger.info(f"{'='*60}")
-            
-            try:
-                # Fetch top headlines
-                articles = fetch_top_headlines(
-                    api_key=api_key,
-                    category=category,
-                    country=args.country,
-                    page_size=args.limit
-                )
-                
-                if not articles:
-                    logger.warning(f"No articles found for category: {category}")
-                    continue
-                
-                # Normalize articles
-                normalized = [
-                    normalize_article(article, source_uuid, category)
-                    for article in articles
-                ]
-                
-                # Upsert to Supabase
-                inserted, updated = upsert_articles(supabase, normalized)
-                
-                total_fetched += len(articles)
-                total_inserted += inserted
-                
-                logger.info(f"Category {category}: Fetched {len(articles)}, Inserted {inserted}")
-            
-            except Exception as e:
-                logger.error(f"Error processing category {category}: {e}")
-                continue
-        
-        # Summary
-        logger.info(f"\n{'='*60}")
-        logger.info("IMPORT SUMMARY")
-        logger.info(f"{'='*60}")
-        logger.info(f"Total articles fetched: {total_fetched}")
-        logger.info(f"Total articles inserted/updated: {total_inserted}")
-        logger.info("Import completed successfully!")
-    
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--dry-run', action='store_true', help='Parse + dedup + log summary, no DB writes')
+    ap.add_argument('--no-images', action='store_true', help='Skip og:image fetch entirely')
+    args = ap.parse_args()
+
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        logger.error('missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env')
         sys.exit(1)
+
+    logger.info('=' * 60)
+    logger.info('📰 News import (dry_run=%s, no_images=%s, keep_per_tier=%d)',
+                args.dry_run, args.no_images, KEEP_PER_TIER)
+    logger.info('=' * 60)
+
+    by_tier: Dict[int, List[Dict[str, Any]]] = {}
+    for tier, category, display, url in TIERS:
+        logger.info('▶ Tier %d — %s', tier, display)
+        by_tier[tier] = parse_feed(url, tier, category)
+
+    raw_total = sum(len(v) for v in by_tier.values())
+    deduped = dedup_articles(by_tier)
+    logger.info('raw=%d deduped=%d (dropped=%d)', raw_total, len(deduped), raw_total - len(deduped))
+
+    by_tier_dedup: Dict[int, int] = {}
+    for a in deduped:
+        by_tier_dedup[a['tier']] = by_tier_dedup.get(a['tier'], 0) + 1
+    for t, _, display, _ in TIERS:
+        logger.info('  tier %d (%s): %d articles kept', t, display, by_tier_dedup.get(t, 0))
+
+    if args.dry_run:
+        logger.info('--- SAMPLE (first 3 of each tier) ---')
+        for t, _, display, _ in TIERS:
+            logger.info('• tier %d (%s):', t, display)
+            for a in [x for x in deduped if x['tier'] == t][:3]:
+                logger.info('    %s — %s', a.get('author') or '?', a['title'])
+        logger.info('dry-run: no DB writes')
+        return
+
+    sb = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    logger.info('✅ Supabase connected')
+
+    src_uuid = upsert_source(sb)
+    existing_ids = get_existing_external_ids(sb)
+    logger.info('📦 existing articles in DB: %d', len(existing_ids))
+
+    new_articles = [a for a in deduped if a['external_id'] not in existing_ids]
+    logger.info('🆕 new articles to ingest: %d', len(new_articles))
+
+    if not args.no_images and new_articles:
+        logger.info('🖼  fetching og:image for up to %d new articles (budget %ds)...',
+                    len(new_articles), IMAGE_BUDGET_SEC)
+        deadline = time.time() + IMAGE_BUDGET_SEC
+        got = 0
+        for a in new_articles:
+            if time.time() > deadline:
+                logger.info('   image budget exhausted')
+                break
+            img = fetch_og_image(a['url'])
+            if img:
+                a['image_url'] = img
+                got += 1
+        logger.info('🖼  got %d images', got)
+
+    rows = []
+    for a in new_articles:
+        rows.append({
+            'source_id': src_uuid,
+            'external_id': a['external_id'],
+            'title': a['title'],
+            'description': a.get('description'),
+            'url': a['url'],
+            'image_url': a.get('image_url'),
+            'author': a.get('author'),
+            'published_at': a.get('published_at') or datetime.now(timezone.utc).isoformat(),
+            'category': a['category'],
+            'language': 'en',
+            'country': 'us',
+        })
+
+    inserted = 0
+    batch = 100
+    for i in range(0, len(rows), batch):
+        chunk = rows[i:i + batch]
+        sb.table('news_articles').upsert(chunk, on_conflict='external_id').execute()
+        inserted += len(chunk)
+    logger.info('✅ upserted %d articles', inserted)
+
+    for _, category, display, _ in TIERS:
+        deleted = prune_per_tier(sb, category, KEEP_PER_TIER)
+        if deleted:
+            logger.info('🧹 pruned %s: removed %d older articles (kept top %d)', display, deleted, KEEP_PER_TIER)
+
+    logger.info('=' * 60)
+    logger.info('📰 DONE')
+    logger.info('=' * 60)
 
 
 if __name__ == '__main__':
     main()
-

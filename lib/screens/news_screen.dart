@@ -20,23 +20,22 @@ class NewsScreen extends ConsumerStatefulWidget {
 class _NewsScreenState extends ConsumerState<NewsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String? _selectedCategory;
+  // Tier key ('local_putnam', 'ne_florida', etc.) or 'all'. Default: local.
+  String _selectedCategory = 'local_putnam';
   int _currentPage = 1;
   final int _pageSize = 20;
 
-  // Search debounce timer
   DateTime _lastSearchUpdate = DateTime.now();
 
-  // Available categories
-  final List<String> _categories = [
-    'all',
-    'general',
-    'technology',
-    'business',
-    'health',
-    'science',
-    'sports',
-    'entertainment',
+  // 5 tiers + All, ordered most-local to least-local.
+  // Each entry: (tier key used in DB, display label shown on the chip).
+  static const List<({String key, String label})> _tiers = [
+    (key: 'local_putnam',    label: 'PUTNAM'),
+    (key: 'ne_florida',      label: 'NE FLORIDA'),
+    (key: 'central_florida', label: 'CENTRAL FL'),
+    (key: 'state_florida',   label: 'FLORIDA'),
+    (key: 'us_headlines',    label: 'U.S.'),
+    (key: 'all',             label: 'ALL'),
   ];
 
   @override
@@ -72,7 +71,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
     setState(() {
       _searchQuery = '';
       _searchController.clear();
-      _selectedCategory = null;
+      _selectedCategory = 'local_putnam';
       _currentPage = 1;
     });
   }
@@ -83,9 +82,9 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open article')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open article')));
       }
     }
   }
@@ -97,7 +96,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
     final articlesAsync = ref.watch(newsArticlesProvider(filters));
 
     return Scaffold(
-      appBar: const PutnamAppBar(showBackButton: true),
+      appBar: const putnamlifeBar(showBackButton: true),
       drawer: const AppDrawer(),
       endDrawer: const SettingsDrawer(),
       body: Column(
@@ -133,19 +132,18 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Category chips
+                // Tier chips — most local to national
                 SizedBox(
                   height: 40,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: _categories.map((category) {
-                      final isSelected = _selectedCategory == category ||
-                          (_selectedCategory == null && category == 'all');
+                    children: _tiers.map((tier) {
+                      final bool isSelected = _selectedCategory == tier.key;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
                           label: Text(
-                            category.toUpperCase(),
+                            tier.label,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: isSelected
@@ -156,14 +154,20 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                           selected: isSelected,
                           onSelected: (selected) {
                             setState(() {
-                              _selectedCategory = selected ? category : null;
-                              _currentPage = 1;
+                              // Always keep a tier selected (no null state);
+                              // tapping a chip that's already selected is a no-op.
+                              if (selected) {
+                                _selectedCategory = tier.key;
+                                _currentPage = 1;
+                              }
                             });
                           },
                           selectedColor: appColors.accentOrange,
                           checkmarkColor: Colors.white,
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : appColors.textDark,
+                            color: isSelected
+                                ? Colors.white
+                                : appColors.textDark,
                           ),
                         ),
                       );
@@ -198,12 +202,12 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                           ),
                         ),
                         if (_searchQuery.isNotEmpty ||
-                            (_selectedCategory != null && _selectedCategory != 'all'))
+                            _selectedCategory != 'local_putnam')
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: TextButton(
                               onPressed: _resetFilters,
-                              child: const Text('Clear filters'),
+                              child: const Text('Reset filters'),
                             ),
                           ),
                       ],
@@ -217,7 +221,8 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                   },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: results.articles.length + (results.hasMore ? 1 : 0),
+                    itemCount:
+                        results.articles.length + (results.hasMore ? 1 : 0),
                     itemBuilder: (BuildContext context, int index) {
                       if (index == results.articles.length) {
                         // Load more button
@@ -271,13 +276,19 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                                     // Category badge
                                     if (article.category != null)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
                                         child: Chip(
                                           label: Text(
                                             article.categoryDisplay,
-                                            style: const TextStyle(fontSize: 10),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                            ),
                                           ),
-                                          backgroundColor: appColors.accentOrange.withValues(alpha: 0.2),
+                                          backgroundColor: appColors
+                                              .accentOrange
+                                              .withValues(alpha: 0.2),
                                           padding: EdgeInsets.zero,
                                           materialTapTargetSize:
                                               MaterialTapTargetSize.shrinkWrap,
@@ -298,7 +309,8 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                                     if (article.description != null &&
                                         article.description!.isNotEmpty)
                                       Text(
-                                        article.descriptionShort ?? article.description!,
+                                        article.descriptionShort ??
+                                            article.description!,
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: appColors.textMedium,
@@ -390,4 +402,3 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
     );
   }
 }
-

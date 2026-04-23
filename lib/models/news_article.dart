@@ -79,12 +79,41 @@ class NewsArticle {
     return '${description!.substring(0, 147)}...';
   }
 
-  /// Category display name (capitalized)
+  /// Category display name — tier-friendly labels
   String get categoryDisplay {
-    if (category == null || category!.isEmpty) {
-      return 'General';
+    switch (category) {
+      case 'local_putnam':
+        return 'Putnam County';
+      case 'ne_florida':
+        return 'Northeast Florida';
+      case 'central_florida':
+        return 'Central Florida';
+      case 'state_florida':
+        return 'Florida';
+      case 'us_headlines':
+        return 'U.S.';
+      default:
+        if (category == null || category!.isEmpty) return 'News';
+        return category![0].toUpperCase() + category!.substring(1);
     }
-    return category![0].toUpperCase() + category!.substring(1);
+  }
+
+  /// Tier priority (1 = most local, 5 = national). Used for All-view sorting.
+  int get tierPriority {
+    switch (category) {
+      case 'local_putnam':
+        return 1;
+      case 'ne_florida':
+        return 2;
+      case 'central_florida':
+        return 3;
+      case 'state_florida':
+        return 4;
+      case 'us_headlines':
+        return 5;
+      default:
+        return 99;
+    }
   }
 
   /// Check if article is recent (within last 24 hours)
