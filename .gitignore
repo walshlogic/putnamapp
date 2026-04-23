@@ -38,6 +38,14 @@ logs/
 tempData/
 temp_*/
 
+# Ingest pipeline ephemera — raw source exports, parsed CSVs, generated SQL batches
+ingest/*/work/
+
+# Timestamped backups of stale env files (may contain dead credentials)
+*.stale-*
+assets/.env.stale-*
+flutter_env.json.stale-*
+
 # Python
 __pycache__/
 *.py[cod]
