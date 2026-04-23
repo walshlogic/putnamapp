@@ -21,12 +21,13 @@ final currentSessionProvider = Provider<Session?>((ref) {
   final authService = ref.watch(authServiceProvider);
   // Watch auth state to trigger rebuild - handle AsyncValue properly
   final authStateAsync = ref.watch(authStateProvider);
-  
+
   // Get session from auth state if available, otherwise from authService
   final session = authStateAsync.when(
     data: (authState) => authState.session ?? authService.currentSession,
-    loading: () => authService.currentSession, // Use current session while loading
-    error: (_, __) => authService.currentSession, // Use current session on error
+    loading: () =>
+        authService.currentSession, // Use current session while loading
+    error: (_, _) => authService.currentSession, // Use current session on error
   );
 
   return session;
@@ -51,7 +52,7 @@ final currentUserProfileProvider = FutureProvider<UserProfile?>((ref) async {
 
   try {
     var profile = await authService.getUserProfile(userId);
-    
+
     // Start trial for new users who don't have one yet (e.g., OAuth signups)
     // Only start if they don't have a trial_started_at and don't have an active subscription
     if (profile.trialStartedAt == null && !profile.hasActivePremium) {
@@ -63,7 +64,7 @@ final currentUserProfileProvider = FutureProvider<UserProfile?>((ref) async {
         debugPrint('⚠️ Failed to start trial: $e');
       }
     }
-    
+
     return profile;
   } catch (e) {
     // If profile doesn't exist yet (e.g., OAuth user), return null
@@ -77,14 +78,8 @@ final isPremiumUserProvider = Provider<bool>((ref) {
   return profileAsync.when(
     data: (profile) => profile?.hasActivePremium ?? false,
     loading: () => false,
-    error: (_, __) => false,
+    error: (_, _) => false,
   );
-});
-
-/// Provider for checking if user should see ads
-final shouldShowAdsProvider = Provider<bool>((ref) {
-  final isPremium = ref.watch(isPremiumUserProvider);
-  return !isPremium;
 });
 
 /// Provider for user subscription tier (returns 'free', 'silver', or 'gold')
@@ -93,7 +88,7 @@ final subscriptionTierProvider = Provider<String>((ref) {
   return profileAsync.when(
     data: (profile) => profile?.subscriptionTier ?? 'free',
     loading: () => 'free',
-    error: (_, __) => 'free',
+    error: (_, _) => 'free',
   );
 });
 
@@ -113,7 +108,9 @@ final signInProvider =
           password: password,
         );
 
-        debugPrint('🔧 signInProvider: Login successful, refreshing auth state');
+        debugPrint(
+          '🔧 signInProvider: Login successful, refreshing auth state',
+        );
         // Force refresh of all auth state
         ref.invalidate(authStateProvider);
         ref.invalidate(currentSessionProvider);

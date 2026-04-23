@@ -31,7 +31,7 @@ class PutnamAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
             ),
-      title: const Text('PUTNAM.APP'),
+      title: const Text('PUTNAM+LIFE'),
       centerTitle: true,
       actions: <Widget>[
         // Profile icon with premium badge

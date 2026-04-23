@@ -45,14 +45,13 @@ class _BookingPhotoProgressionScreenState
       _isPlaying = true;
     });
     _timer?.cancel();
-    // Use equal timer + animation duration for seamless flow.
-    _timer = Timer.periodic(const Duration(milliseconds: 700), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 1000), (_) {
       if (frameCount == 0) return;
       final nextIndex = (_currentIndex + 1) % frameCount;
       _pageController.animateToPage(
         nextIndex,
         duration: const Duration(milliseconds: 700),
-        curve: Curves.linear,
+        curve: Curves.easeInOut,
       );
     });
   }
@@ -238,27 +237,40 @@ class _BookingPhotoProgressionScreenState
                 constraints: const BoxConstraints(minWidth: 90, minHeight: 90),
                 onPressed: () => _togglePlayback(frames.length),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Expanded(
-                    child: Slider(
-                      value: _currentIndex.toDouble(),
-                      min: 0,
-                      max: (frames.length - 1).toDouble(),
-                      onChangeStart: (_) {
-                        _userPaused = true;
-                        _pausePlayback();
-                      },
-                      onChanged: (value) {
-                        final index = value.round();
-                        _pageController.jumpToPage(index);
-                      },
-                      activeColor: appColors.primaryPurple,
-                      inactiveColor: appColors.border,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 6,
+                    activeTrackColor: appColors.primaryPurple,
+                    inactiveTrackColor: appColors.border,
+                    thumbColor: Colors.white,
+                    overlayColor: appColors.primaryPurple.withValues(
+                      alpha: 0.15,
+                    ),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 16,
+                      elevation: 4,
+                      pressedElevation: 8,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 28,
                     ),
                   ),
-                ],
+                  child: Slider(
+                    value: _currentIndex.toDouble(),
+                    min: 0,
+                    max: (frames.length - 1).toDouble(),
+                    onChangeStart: (_) {
+                      _userPaused = true;
+                      _pausePlayback();
+                    },
+                    onChanged: (value) {
+                      final index = value.round();
+                      _pageController.jumpToPage(index);
+                    },
+                  ),
+                ),
               ),
               Text(
                 '${_currentIndex + 1}/${frames.length}',

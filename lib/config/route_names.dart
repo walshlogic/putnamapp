@@ -50,6 +50,8 @@ class RouteNames {
   static const String criminalBackHistory = 'criminal-back-history';
   static const String criminalBackHistoryDetail =
       'criminal-back-history-detail';
+  static const String oriRecords = 'ori-records';
+  static const String oriRecordDetail = 'ori-record-detail';
 
   // News routes
   static const String news = 'news';

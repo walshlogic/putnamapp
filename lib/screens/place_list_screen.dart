@@ -16,10 +16,7 @@ import '../widgets/settings_drawer.dart';
 
 /// Screen to display list of places in a category
 class PlaceListScreen extends ConsumerStatefulWidget {
-  const PlaceListScreen({
-    required this.category,
-    super.key,
-  });
+  const PlaceListScreen({required this.category, super.key});
 
   final PlaceCategory category;
 
@@ -31,7 +28,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
   bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
   late PlaceFilters _filters;
-  
+
   // Search debounce timer
   DateTime _lastSearchUpdate = DateTime.now();
 
@@ -55,7 +52,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
   void _onSearchChanged(String value) {
     final DateTime now = DateTime.now();
     _lastSearchUpdate = now;
-    
+
     // Wait before actually searching
     Future.delayed(const Duration(milliseconds: 500), () {
       if (_lastSearchUpdate == now && mounted) {
@@ -69,10 +66,10 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
-    
+
     // Watch the filtered places
     final placesAsync = ref.watch(filteredPlacesProvider(_filters));
-    
+
     // Watch available subcategories for this category
     final subcategoriesAsync = ref.watch(
       subcategoriesProvider(widget.category.value),
@@ -81,7 +78,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
     // Get keyboard height to adjust layout
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final bool isKeyboardVisible = keyboardHeight > 0;
-    
+
     // Calculate max height for search panel
     final double searchPanelMaxHeight = isKeyboardVisible ? 150.0 : 500.0;
 
@@ -105,11 +102,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
             ),
             child: Row(
               children: <Widget>[
-                Icon(
-                  _getCategoryIcon(),
-                  color: appColors.white,
-                  size: 32,
-                ),
+                Icon(_getCategoryIcon(), color: appColors.white, size: 32),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -149,7 +142,10 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -160,7 +156,9 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _isSearchExpanded ? 'HIDE SEARCH & FILTERS' : 'SEARCH & FILTERS',
+                      _isSearchExpanded
+                          ? 'HIDE SEARCH & FILTERS'
+                          : 'SEARCH & FILTERS',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -178,14 +176,14 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
               ),
             ),
           ),
-          
+
           // Animated Search Panel
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             height: _isSearchExpanded ? null : 0,
-            constraints: _isSearchExpanded 
-                ? BoxConstraints(maxHeight: searchPanelMaxHeight) 
+            constraints: _isSearchExpanded
+                ? BoxConstraints(maxHeight: searchPanelMaxHeight)
                 : const BoxConstraints(maxHeight: 0),
             child: _isSearchExpanded
                 ? SingleChildScrollView(
@@ -219,7 +217,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                         padding: EdgeInsets.all(24),
                         child: Center(child: CircularProgressIndicator()),
                       ),
-                      error: (_, __) => PlaceSearchPanel(
+                      error: (_, _) => PlaceSearchPanel(
                         searchController: _searchController,
                         onSearchChanged: _onSearchChanged,
                         onSearchCleared: () {
@@ -254,7 +252,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
             placesAsync.when(
               data: (places) {
                 if (places.isEmpty) return const SizedBox.shrink();
-                
+
                 return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -274,7 +272,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                 );
               },
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
 
           // Place List
@@ -406,8 +404,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                           width: 64,
                           height: 64,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _buildPlaceIcon(appColors),
+                          errorBuilder: (_, _, _) => _buildPlaceIcon(appColors),
                         )
                       : _buildPlaceIcon(appColors),
                 ),
@@ -438,8 +435,9 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    appColors.accentTeal.withValues(alpha: 0.15),
+                                color: appColors.accentTeal.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -453,7 +451,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                             ),
                         ],
                       ),
-                      
+
                       // Subcategory badge
                       if (place.subcategory != null) ...[
                         const SizedBox(height: 6),
@@ -466,12 +464,17 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                             color: appColors.lightPurple.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: appColors.primaryPurple.withValues(alpha: 0.3),
+                              color: appColors.primaryPurple.withValues(
+                                alpha: 0.3,
+                              ),
                               width: 1,
                             ),
                           ),
                           child: Text(
-                            place.subcategory!.toUpperCase().replaceAll('-', ' '),
+                            place.subcategory!.toUpperCase().replaceAll(
+                              '-',
+                              ' ',
+                            ),
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -546,11 +549,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
                 ),
 
                 // Chevron
-                Icon(
-                  Icons.chevron_right,
-                  color: appColors.divider,
-                  size: 24,
-                ),
+                Icon(Icons.chevron_right, color: appColors.divider, size: 24),
               ],
             ),
           ),
@@ -570,11 +569,7 @@ class _PlaceListScreenState extends ConsumerState<PlaceListScreen> {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Icon(
-        _getCategoryIcon(),
-        color: appColors.white,
-        size: 32,
-      ),
+      child: Icon(_getCategoryIcon(), color: appColors.white, size: 32),
     );
   }
 

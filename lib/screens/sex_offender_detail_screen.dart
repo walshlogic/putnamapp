@@ -5,10 +5,7 @@ import '../models/sex_offender.dart';
 import '../widgets/putnam_app_bar.dart';
 
 class SexOffenderDetailScreen extends StatelessWidget {
-  const SexOffenderDetailScreen({
-    required this.offender,
-    super.key,
-  });
+  const SexOffenderDetailScreen({required this.offender, super.key});
 
   final SexOffender offender;
 
@@ -27,18 +24,26 @@ class SexOffenderDetailScreen extends StatelessWidget {
             // Photo or placeholder (tappable to enlarge if photo exists)
             Center(
               child: GestureDetector(
-                onTap: offender.imageUrl != null &&
-                        offender.imageUrl!.isNotEmpty
+                onTap:
+                    offender.imageUrl != null && offender.imageUrl!.isNotEmpty
                     ? () {
                         // Show enlarged photo in dialog
                         showDialog(
                           context: context,
                           builder: (BuildContext dialogContext) {
                             // Use a square container based on the smaller screen dimension
-                            final double screenWidth = MediaQuery.of(dialogContext).size.width;
-                            final double screenHeight = MediaQuery.of(dialogContext).size.height;
-                            final double size = (screenWidth < screenHeight ? screenWidth : screenHeight) * 0.85;
-                            
+                            final double screenWidth = MediaQuery.of(
+                              dialogContext,
+                            ).size.width;
+                            final double screenHeight = MediaQuery.of(
+                              dialogContext,
+                            ).size.height;
+                            final double size =
+                                (screenWidth < screenHeight
+                                    ? screenWidth
+                                    : screenHeight) *
+                                0.85;
+
                             return Dialog(
                               backgroundColor: Colors.transparent,
                               child: Stack(
@@ -46,13 +51,18 @@ class SexOffenderDetailScreen extends StatelessWidget {
                                   // Enlarged photo
                                   Center(
                                     child: GestureDetector(
-                                      onTap: () => Navigator.of(dialogContext).pop(),
+                                      onTap: () =>
+                                          Navigator.of(dialogContext).pop(),
                                       child: Container(
                                         width: size,
                                         height: size,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.5),
-                                          borderRadius: BorderRadius.circular(24),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
                                           boxShadow: <BoxShadow>[
                                             BoxShadow(
                                               color: Colors.black.withValues(
@@ -64,19 +74,22 @@ class SexOffenderDetailScreen extends StatelessWidget {
                                           ],
                                         ),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(24),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
                                           child: Image.network(
                                             offender.imageUrl!,
                                             fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) =>
+                                            errorBuilder: (_, _, _) =>
                                                 Container(
-                                              color: appColors.lightPurple,
-                                              child: Icon(
-                                                Icons.person_outline,
-                                                size: 64,
-                                                color: appColors.primaryPurple,
-                                              ),
-                                            ),
+                                                  color: appColors.lightPurple,
+                                                  child: Icon(
+                                                    Icons.person_outline,
+                                                    size: 64,
+                                                    color:
+                                                        appColors.primaryPurple,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -114,14 +127,14 @@ class SexOffenderDetailScreen extends StatelessWidget {
                       width: 2,
                     ),
                   ),
-                  child: offender.imageUrl != null &&
-                          offender.imageUrl!.isNotEmpty
+                  child:
+                      offender.imageUrl != null && offender.imageUrl!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(14),
                           child: Image.network(
                             offender.imageUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (_, _, _) => Icon(
                               Icons.person_outline,
                               size: 64,
                               color: appColors.primaryPurple,
@@ -185,12 +198,7 @@ class SexOffenderDetailScreen extends StatelessWidget {
                   children: <Widget>[
                     // Age
                     if (offender.birthDate != null) ...<Widget>[
-                      _buildDetailRow(
-                        context,
-                        'AGE',
-                        offender.age,
-                        Icons.cake,
-                      ),
+                      _buildDetailRow(context, 'AGE', offender.age, Icons.cake),
                       const SizedBox(height: 16),
                     ],
 
@@ -231,11 +239,7 @@ class SexOffenderDetailScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(
-          icon,
-          size: 20,
-          color: appColors.primaryPurple,
-        ),
+        Icon(icon, size: 20, color: appColors.primaryPurple),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -266,4 +270,3 @@ class SexOffenderDetailScreen extends StatelessWidget {
     );
   }
 }
-

@@ -32,13 +32,13 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
   String _selectedTimeFilter = AppConfig.timeRange24Hours;
   SortField _sortBy = SortField.date;
   SortDirection _sortDirection = SortDirection.descending;
-  
+
   // Pagination state
   List<JailBooking> _allLoadedBookings = <JailBooking>[];
   int _currentOffset = 0;
   bool _isLoadingMore = false;
   bool _isChangingFilters = false;
-  
+
   // Search debounce timer
   DateTime _lastSearchUpdate = DateTime.now();
 
@@ -55,12 +55,12 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
     _searchController.dispose();
     super.dispose();
   }
-  
+
   // Handle search with debounce
   void _onSearchChanged(String value) {
     final DateTime now = DateTime.now();
     _lastSearchUpdate = now;
-    
+
     // Wait before actually searching
     Future.delayed(AppConfig.searchDebounceDelay, () {
       if (_lastSearchUpdate == now && mounted) {
@@ -97,7 +97,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
-    
+
     // Watch the filtered bookings with current filters
     final AsyncValue<BookingResults> bookingResults = ref.watch(
       filteredBookingsProvider(_getCurrentFilters()),
@@ -106,7 +106,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
     // Get keyboard height to adjust layout
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final bool isKeyboardVisible = keyboardHeight > 0;
-    
+
     // Calculate max height for search panel based on keyboard visibility
     // When keyboard is visible, use much smaller height to prevent overflow
     final double searchPanelMaxHeight = isKeyboardVisible ? 150.0 : 400.0;
@@ -118,9 +118,12 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
       resizeToAvoidBottomInset: true,
       body: Column(
         children: <Widget>[
-          // Search/Filter Toggle Tab
+          // Search/Filter Toggle Tab — accent orange when expanded so it's
+          // obvious how to close.
           Material(
-            color: appColors.lightPurple,
+            color: _isSearchExpanded
+                ? appColors.accentOrange
+                : appColors.lightPurple,
             child: InkWell(
               onTap: () {
                 setState(() {
@@ -129,28 +132,40 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Icon(
-                      Icons.search,
-                      color: appColors.primaryPurple,
+                      _isSearchExpanded ? Icons.close : Icons.search,
+                      color: _isSearchExpanded
+                          ? appColors.white
+                          : appColors.primaryPurple,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _isSearchExpanded ? 'HIDE SEARCH & FILTERS' : 'SEARCH & FILTERS',
+                      _isSearchExpanded
+                          ? 'HIDE SEARCH & FILTERS'
+                          : 'SHOW SEARCH & FILTERS',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: appColors.primaryPurple,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                        color: _isSearchExpanded
+                            ? appColors.white
+                            : appColors.primaryPurple,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Icon(
                       _isSearchExpanded ? Icons.expand_less : Icons.expand_more,
-                      color: appColors.primaryPurple,
+                      color: _isSearchExpanded
+                          ? appColors.white
+                          : appColors.primaryPurple,
                       size: 20,
                     ),
                   ],
@@ -158,68 +173,105 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
               ),
             ),
           ),
-          
+
           // Animated Search Panel
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             height: _isSearchExpanded ? null : 0,
-            constraints: _isSearchExpanded 
-                ? BoxConstraints(maxHeight: searchPanelMaxHeight) 
+            constraints: _isSearchExpanded
+                ? BoxConstraints(maxHeight: searchPanelMaxHeight)
                 : const BoxConstraints(maxHeight: 0),
             child: _isSearchExpanded
                 ? SingleChildScrollView(
-                    child: SearchPanel(
-                    searchController: _searchController,
-                    onSearchChanged: _onSearchChanged,
-                    onSearchCleared: () {
-                      _searchController.clear();
-                      _resetPagination();
-                      setState(() {
-                        _searchQuery = '';
-                        _isChangingFilters = true;
-                      });
-                    },
-                    selectedTimeFilter: _selectedTimeFilter,
-                    onTimeFilterChanged: (String value) {
-                      _resetPagination();
-                      ref.invalidate(filteredBookingsProvider);
-                      setState(() {
-                        _selectedTimeFilter = value;
-                        _isChangingFilters = true;
-                      });
-                    },
-                    selectedStatusFilter: _selectedFilter,
-                    onStatusFilterChanged: (String value) {
-                      _resetPagination();
-                      ref.invalidate(filteredBookingsProvider);
-                      setState(() {
-                        _selectedFilter = value;
-                        _isChangingFilters = true;
-                      });
-                    },
-                    currentSortField: _sortBy,
-                    currentSortDirection: _sortDirection,
-                    onSortChanged: (SortField field, SortDirection direction) {
-                      _resetPagination();
-                      ref.invalidate(filteredBookingsProvider);
-                      setState(() {
-                        _sortBy = field;
-                        _sortDirection = direction;
-                        _isChangingFilters = true;
-                      });
-                    },
+                    child: Column(
+                      children: <Widget>[
+                        SearchPanel(
+                          searchController: _searchController,
+                          onSearchChanged: _onSearchChanged,
+                          onSearchCleared: () {
+                            _searchController.clear();
+                            _resetPagination();
+                            setState(() {
+                              _searchQuery = '';
+                              _isChangingFilters = true;
+                            });
+                          },
+                          selectedTimeFilter: _selectedTimeFilter,
+                          onTimeFilterChanged: (String value) {
+                            _resetPagination();
+                            ref.invalidate(filteredBookingsProvider);
+                            setState(() {
+                              _selectedTimeFilter = value;
+                              _isChangingFilters = true;
+                            });
+                          },
+                          selectedStatusFilter: _selectedFilter,
+                          onStatusFilterChanged: (String value) {
+                            _resetPagination();
+                            ref.invalidate(filteredBookingsProvider);
+                            setState(() {
+                              _selectedFilter = value;
+                              _isChangingFilters = true;
+                            });
+                          },
+                          currentSortField: _sortBy,
+                          currentSortDirection: _sortDirection,
+                          onSortChanged:
+                              (SortField field, SortDirection direction) {
+                                _resetPagination();
+                                ref.invalidate(filteredBookingsProvider);
+                                setState(() {
+                                  _sortBy = field;
+                                  _sortDirection = direction;
+                                  _isChangingFilters = true;
+                                });
+                              },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: appColors.accentOrange,
+                                foregroundColor: appColors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isSearchExpanded = false;
+                                });
+                              },
+                              icon: const Icon(Icons.close, size: 18),
+                              label: const Text(
+                                'VIEW JAIL LOG',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 : const SizedBox.shrink(),
           ),
-          
+
           // Fixed Status Bar (pinned, visible only when keyboard is hidden)
           if (!isKeyboardVisible)
             bookingResults.when(
               data: (BookingResults results) {
                 // When offset is 0, use fresh results and update cache
-                if (_currentOffset == 0 && _allLoadedBookings != results.bookings) {
+                if (_currentOffset == 0 &&
+                    _allLoadedBookings != results.bookings) {
                   // Update cache after frame to avoid setState during build
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
@@ -229,14 +281,15 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                     }
                   });
                 }
-                
-                final List<JailBooking> displayBookings = 
-                  _currentOffset == 0 ? results.bookings : _allLoadedBookings;
-                
+
+                final List<JailBooking> displayBookings = _currentOffset == 0
+                    ? results.bookings
+                    : _allLoadedBookings;
+
                 if (displayBookings.isEmpty) {
                   return const SizedBox.shrink();
                 }
-                
+
                 return BookingsStatusBar(
                   displayCount: displayBookings.length,
                   totalCount: results.totalCount,
@@ -246,7 +299,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
               loading: () => const SizedBox.shrink(),
               error: (Object e, StackTrace st) => const SizedBox.shrink(),
             ),
-          
+
           // Bookings List (scrollable)
           Expanded(
             child: RefreshIndicator(
@@ -260,26 +313,29 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
               child: bookingResults.when(
                 data: (BookingResults results) {
                   // When offset is 0, use fresh results and update cache
-                  if (_currentOffset == 0 && _allLoadedBookings != results.bookings) {
+                  if (_currentOffset == 0 &&
+                      _allLoadedBookings != results.bookings) {
                     // Update cache after frame to avoid setState during build
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) {
                         setState(() {
                           _allLoadedBookings = results.bookings;
-                          _isChangingFilters = false; // Reset flag after successful load
+                          _isChangingFilters =
+                              false; // Reset flag after successful load
                         });
                       }
                     });
                   }
-                  
-                  final List<JailBooking> displayBookings = 
-                    _currentOffset == 0 ? results.bookings : _allLoadedBookings;
-                  
+
+                  final List<JailBooking> displayBookings = _currentOffset == 0
+                      ? results.bookings
+                      : _allLoadedBookings;
+
                   // Show loading spinner when changing filters
                   if (_isChangingFilters && displayBookings.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  
+
                   if (displayBookings.isEmpty) {
                     return Center(
                       child: Padding(
@@ -290,7 +346,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                               : 'NO RECENT BOOKINGS',
                         ),
                       ),
-                      );
+                    );
                   }
 
                   return ResponsiveUtils.constrainWidth(
@@ -298,66 +354,75 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                     ListView(
                       padding: context.responsivePadding,
                       children: <Widget>[
-                      // Booking cards
-                      ...displayBookings.map((JailBooking b) {
-                        return BookingListItem(
-                          booking: b,
-                          onTap: () =>
-                              context.push(RoutePaths.bookingDetail, extra: b),
-                        );
-                      }),
-                      // Load More button
-                      if (results.hasMore && !_isLoadingMore)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Center(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                setState(() {
-                                  _isLoadingMore = true;
-                                });
-                                
-                                try {
-                                  // Load next page
-                                  final int nextOffset = _currentOffset + AppConfig.defaultPageSize;
-                                  final BookingResults moreResults = await ref.read(
-                                    filteredBookingsProvider(
-                                      _getCurrentFilters(offset: nextOffset),
-                                    ).future,
-                                  );
-                                  
+                        // Booking cards
+                        ...displayBookings.map((JailBooking b) {
+                          return BookingListItem(
+                            booking: b,
+                            onTap: () => context.push(
+                              RoutePaths.bookingDetail,
+                              extra: b,
+                            ),
+                          );
+                        }),
+                        // Load More button
+                        if (results.hasMore && !_isLoadingMore)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
                                   setState(() {
-                                    _allLoadedBookings.addAll(moreResults.bookings);
-                                    _currentOffset = nextOffset;
-                                    _isLoadingMore = false;
+                                    _isLoadingMore = true;
                                   });
-                                } catch (e) {
-                                  setState(() {
-                                    _isLoadingMore = false;
-                                  });
-                                }
-                              },
-                              icon: Icon(Icons.add, color: appColors.white),
-                              label: Text(
-                                'LOAD MORE (${_formatNumber(results.totalCount - displayBookings.length)} REMAINING)',
-                                style: TextStyle(color: appColors.white),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: appColors.primaryPurple,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
+
+                                  try {
+                                    // Load next page
+                                    final int nextOffset =
+                                        _currentOffset +
+                                        AppConfig.defaultPageSize;
+                                    final BookingResults moreResults = await ref
+                                        .read(
+                                          filteredBookingsProvider(
+                                            _getCurrentFilters(
+                                              offset: nextOffset,
+                                            ),
+                                          ).future,
+                                        );
+
+                                    setState(() {
+                                      _allLoadedBookings.addAll(
+                                        moreResults.bookings,
+                                      );
+                                      _currentOffset = nextOffset;
+                                      _isLoadingMore = false;
+                                    });
+                                  } catch (e) {
+                                    setState(() {
+                                      _isLoadingMore = false;
+                                    });
+                                  }
+                                },
+                                icon: Icon(Icons.add, color: appColors.white),
+                                label: Text(
+                                  'LOAD MORE (${_formatNumber(results.totalCount - displayBookings.length)} REMAINING)',
+                                  style: TextStyle(color: appColors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: appColors.primaryPurple,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      if (_isLoadingMore)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                    ],
+                        if (_isLoadingMore)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                      ],
                     ),
                   );
                 },

@@ -60,7 +60,7 @@ class AboutScreen extends ConsumerWidget {
 
                 // App Name
                 Text(
-                  'PUTNAM.APP',
+                  'Putnam+Life',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: appColors.primaryPurple,
@@ -109,7 +109,7 @@ class AboutScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Putnam.app provides easy access to important local information for Putnam County, Florida residents and visitors.',
+                          'Putnam+Life provides easy access to important local information for Putnam County, Florida residents and visitors.',
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(height: 1.6),

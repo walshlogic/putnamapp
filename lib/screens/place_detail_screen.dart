@@ -53,7 +53,7 @@ class PlaceDetailScreen extends ConsumerWidget {
                             Image.network(
                               coverUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, _, _) =>
                                   _buildCoverFallback(appColors),
                             )
                           else

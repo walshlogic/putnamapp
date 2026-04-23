@@ -21,6 +21,9 @@ import '../screens/booking_detail_screen.dart';
 import '../screens/booking_comment_create_screen.dart';
 import '../screens/booking_comment_edit_screen.dart';
 import '../screens/booking_photo_progression_screen.dart';
+import '../models/ori_record.dart';
+import '../screens/ori_records_screen.dart';
+import '../screens/ori_record_detail_screen.dart';
 import '../screens/bookings_screen.dart';
 import '../screens/contact_screen.dart';
 import '../screens/directory_screen.dart';
@@ -410,6 +413,22 @@ GoRouter createAppRouter(WidgetRef ref) {
               state.extra! as CriminalBackHistory;
           return NoTransitionPage(
             child: CriminalBackHistoryDetailScreen(caseRecord: caseRecord),
+          );
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.oriRecords,
+        name: RouteNames.oriRecords,
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            const NoTransitionPage(child: OriRecordsScreen()),
+      ),
+      GoRoute(
+        path: RoutePaths.oriRecordDetail,
+        name: RouteNames.oriRecordDetail,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          final OriRecord record = state.extra! as OriRecord;
+          return NoTransitionPage(
+            child: OriRecordDetailScreen(record: record),
           );
         },
       ),

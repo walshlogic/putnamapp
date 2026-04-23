@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,7 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'providers/auth_providers.dart';
 import 'router/app_router.dart';
-// import 'services/admob_service.dart'; // Disabled - ads removed for App Store submission
 import 'services/revenuecat_service.dart';
 import 'services/supabase_service.dart';
 import 'theme/app_theme.dart';
@@ -77,6 +77,11 @@ Future<void> _runApp() async {
   // Initialize Flutter bindings first - must be in same zone as runApp
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Lock the app to portrait orientation on all devices.
+  await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+    DeviceOrientation.portraitUp,
+  ]);
+
   try {
     final String supabaseUrl = AppConfig.supabaseUrl;
     final String supabaseAnonKey = AppConfig.supabaseAnonKey;
@@ -98,19 +103,6 @@ Future<void> _runApp() async {
     );
 
     SupabaseService.configure(Supabase.instance.client);
-
-    // AdMob initialization disabled - removed ads for App Store submission
-    // Initialize AdMob (non-blocking)
-    // AdMobService.initialize()
-    //     .timeout(
-    //       const Duration(seconds: 5),
-    //       onTimeout: () {
-    //         // Silently continue if AdMob times out
-    //       },
-    //     )
-    //     .catchError((e) {
-    //       // Silently continue if AdMob fails
-    //     });
 
     // Initialize RevenueCat in background (non-blocking)
     // This can sometimes hang on iOS, so we don't block app startup
@@ -211,7 +203,7 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const Text(
-                      '- PutnamApp is Provided for Informational Purposes Only.\n'
+                      '- Putnam+Life is Provided for Informational Purposes Only.\n'
                       '- The App Displays Public Sourced Data.\n'
                       '- No Warranties On Accuracy, Completeness, and Errors.\n'
                       '- Do Not Rely on This App To Make Decisions.\n'
@@ -276,7 +268,7 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Putnam.app',
+      title: 'Putnam+Life',
       theme: AppTheme.light(),
       routerConfig: _router!,
       builder: (context, child) {

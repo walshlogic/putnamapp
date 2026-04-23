@@ -347,7 +347,7 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
                           width: 64,
                           height: 64,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               _buildSearchResultIcon(appColors, colors, icon),
                         )
                       : _buildSearchResultIcon(appColors, colors, icon),

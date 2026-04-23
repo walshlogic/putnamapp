@@ -120,6 +120,18 @@ class ClerkOfCourtMainScreen extends StatelessWidget {
                           context.push(RoutePaths.criminalBackHistory);
                         },
                       ),
+                      // Official Records (ORI)
+                      _buildFeatureCard(
+                        context,
+                        appColors,
+                        icon: Icons.folder_copy,
+                        title: 'OFFICIAL\nRECORDS',
+                        gradientStart: appColors.accentTeal,
+                        gradientEnd: appColors.accentTealDark,
+                        onTap: () {
+                          context.push(RoutePaths.oriRecords);
+                        },
+                      ),
                     ],
                   ),
                 ],

@@ -241,6 +241,7 @@
 				33CC110E2044A8840003C045 /* Bundle Framework */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				461D2B037B880491C377B2A9 /* [CP] Embed Pods Frameworks */,
+				5A3F2B1C4D7E8F9A0B6C2D3E /* Strip Extended Attributes */,
 			);
 			buildRules = (
 			);
@@ -398,6 +399,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		5A3F2B1C4D7E8F9A0B6C2D3E /* Strip Extended Attributes */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Extended Attributes";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "xattr -cr \"$CODESIGNING_FOLDER_PATH\"\n";
 			showEnvVarsInLog = 0;
 		};
 		AC774538A701E73BD2D39D10 /* [CP] Check Pods Manifest.lock */ = {

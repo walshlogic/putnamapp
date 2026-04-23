@@ -14,7 +14,7 @@ class SettingsDrawer extends ConsumerWidget {
     final appColors = Theme.of(context).extension<AppColors>()!;
     final userProfileAsync = ref.watch(currentUserProfileProvider);
     final isPremium = ref.watch(isPremiumUserProvider);
-    
+
     return Drawer(
       child: Container(
         color: appColors.scaffoldBackground,
@@ -106,10 +106,8 @@ class SettingsDrawer extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    error: (_, __) => Icon(
-                      Icons.error_outline,
-                      color: appColors.white,
-                    ),
+                    error: (_, _) =>
+                        Icon(Icons.error_outline, color: appColors.white),
                   ),
                   // Settings title at bottom
                   Column(
@@ -118,10 +116,11 @@ class SettingsDrawer extends ConsumerWidget {
                     children: <Widget>[
                       Text(
                         'SETTINGS',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: appColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: appColors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       Text(
                         'PREFERENCES & OPTIONS',
@@ -179,7 +178,7 @@ class SettingsDrawer extends ConsumerWidget {
     VoidCallback? onTap,
   }) {
     final appColors = Theme.of(context).extension<AppColors>()!;
-    
+
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -199,18 +198,14 @@ class SettingsDrawer extends ConsumerWidget {
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          fontSize: 12,
-          color: appColors.textLight,
-        ),
+        style: TextStyle(fontSize: 12, color: appColors.textLight),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: appColors.divider,
-      ),
-      onTap: onTap ?? () {
-        // TODO: Navigate to setting detail screens
-      },
+      trailing: Icon(Icons.chevron_right, color: appColors.divider),
+      onTap:
+          onTap ??
+          () {
+            // TODO: Navigate to setting detail screens
+          },
     );
   }
 
@@ -225,7 +220,7 @@ class SettingsDrawer extends ConsumerWidget {
   }) {
     final appColors = Theme.of(context).extension<AppColors>()!;
     final effectiveColor = textColor ?? appColors.textDark;
-    
+
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -234,8 +229,8 @@ class SettingsDrawer extends ConsumerWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
-          icon, 
-          color: textColor ?? appColors.primaryPurple, 
+          icon,
+          color: textColor ?? appColors.primaryPurple,
           size: 24,
         ),
       ),
@@ -262,4 +257,3 @@ class SettingsDrawer extends ConsumerWidget {
     );
   }
 }
-

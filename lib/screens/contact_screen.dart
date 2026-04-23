@@ -30,7 +30,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
   final _phoneController = TextEditingController();
   final _messageTitleController = TextEditingController();
   final _messageBodyController = TextEditingController();
-  
+
   String _selectedDepartment = 'GENERAL';
   bool _pleaseContactMe = false;
   bool _isSubmitting = false;
@@ -47,7 +47,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
   }
 
   Future<void> _copyEmailToClipboard() async {
-    const email = 'info@putnam.app';
+    const email = 'service@PutnamLife.com';
     await Clipboard.setData(const ClipboardData(text: email));
     if (mounted) {
       context.showSnackBar('Email copied to clipboard');
@@ -62,10 +62,12 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
     // Validate that at least email or phone is provided
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
-    
+
     if (email.isEmpty && phone.isEmpty) {
       if (mounted) {
-        context.showErrorSnackBar('Please provide either an email or phone number');
+        context.showErrorSnackBar(
+          'Please provide either an email or phone number',
+        );
       }
       return;
     }
@@ -98,10 +100,10 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
           _pleaseContactMe = false;
           _messageSentSuccessfully = true;
         });
-        
+
         // Show success snackbar
         context.showSuccessSnackBar('Message sent successfully!');
-        
+
         // Navigate to home screen after a short delay to show the snackbar
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
@@ -131,7 +133,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
   @override
   Widget build(BuildContext context) {
     final appColors = Theme.of(context).extension<AppColors>()!;
-    
+
     return Scaffold(
       appBar: const PutnamAppBar(showBackButton: true),
       drawer: const AppDrawer(),
@@ -154,14 +156,14 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'GET IN TOUCH WITH US',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: appColors.textMedium,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: appColors.textMedium),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Email Card with Copy Button
                 Card(
                   child: Padding(
@@ -187,17 +189,17 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             children: <Widget>[
                               Text(
                                 'EMAIL',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: appColors.textLight,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: appColors.textLight,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'info@putnam.app',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                'App@PutnamLife.com',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -214,9 +216,9 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Contact Form
                 Card(
                   child: Padding(
@@ -228,13 +230,14 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                         children: <Widget>[
                           Text(
                             'SEND US A MESSAGE',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: appColors.primaryPurple,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: appColors.primaryPurple,
+                                ),
                           ),
                           const SizedBox(height: 24),
-                          
+
                           // Name Field
                           TextFormField(
                             controller: _nameController,
@@ -251,7 +254,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Email or Phone Field
                           TextFormField(
                             controller: _emailController,
@@ -273,7 +276,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Phone Field
                           TextFormField(
                             controller: _phoneController,
@@ -284,7 +287,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             keyboardType: TextInputType.phone,
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Message Title Field
                           TextFormField(
                             controller: _messageTitleController,
@@ -301,7 +304,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Message Body Field
                           TextFormField(
                             controller: _messageBodyController,
@@ -320,13 +323,12 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             },
                           ),
                           const SizedBox(height: 24),
-                          
+
                           // Department Selection
                           Text(
                             'Department *',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 8),
                           Column(
@@ -382,7 +384,7 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Please Contact Me Checkbox
                           CheckboxListTile(
                             title: const Text('PLEASE CONTACT ME'),
@@ -395,18 +397,22 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                             controlAffinity: ListTileControlAffinity.leading,
                           ),
                           const SizedBox(height: 24),
-                          
+
                           // Buttons
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: <Widget>[
                               TextButton(
                                 onPressed: _isSubmitting ? null : _cancelForm,
-                                child: Text(_messageSentSuccessfully ? 'CLOSE' : 'CANCEL'),
+                                child: Text(
+                                  _messageSentSuccessfully ? 'CLOSE' : 'CANCEL',
+                                ),
                               ),
                               const SizedBox(width: 16),
                               ElevatedButton(
-                                onPressed: _isSubmitting ? null : _submitMessage,
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : _submitMessage,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: appColors.primaryPurple,
                                   foregroundColor: Colors.white,
@@ -421,9 +427,10 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : const Text('SEND'),

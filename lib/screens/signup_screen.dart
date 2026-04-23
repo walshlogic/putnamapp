@@ -136,7 +136,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Join Putnam.app today',
+                    'Join Putnam+Life today',
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -326,7 +326,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: Column(
                       children: <Widget>[
                         Text(
-                          'By Continuing You Agree to Putnam.App\'s',
+                          'By Continuing You Agree to Putnam+Life\'s',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Colors.grey.shade600,
