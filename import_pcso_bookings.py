@@ -106,7 +106,7 @@ PCSO_SYNC_CHARGES = os.getenv('PCSO_SYNC_CHARGES', 'true').lower() in (
 )
 PCSO_PHOTO_BASE_URL = os.getenv(
     'PCSO_PHOTO_BASE_URL',
-    'https://smartweb.pcso.us/ViewImageFull.aspx?bookno=',
+    'https://smartweb.pcso.us/smartwebclient/ViewImage.aspx?bookno=',
 )
 PCSO_PHOTOS_BUCKET = os.getenv('PCSO_PHOTOS_BUCKET', 'pcso-booking-photos')
 PCSO_SYNC_PHOTOS = os.getenv('PCSO_SYNC_PHOTOS', 'true').lower() in (
@@ -232,6 +232,51 @@ def _parse_booking_block(block_text: str) -> Optional[Dict[str, Any]]:
         return None
     booking_no = booking_no_match.group(0)
     return _parse_booking_from_text(block_text, booking_no)
+
+
+_AGENCY_EXACT = {
+    'PCS': 'PUTNAM COUNTY SHERIFF',
+    'PCSO': 'PUTNAM COUNTY SHERIFF',
+    'PPD': 'PALATKA POLICE DEPARTMENT',
+    'IPD': 'INTERLACHEN POLICE DEPARTMENT',
+    'WPD': 'WELAKA POLICE DEPARTMENT',
+    'FHP': 'FLORIDA HIGHWAY PATROL',
+    'FWC': 'FISH AND WILDLIFE',
+}
+_AGENCY_SUBSTR = [
+    ('putnam county sheriff', 'PUTNAM COUNTY SHERIFF'),
+    ('palatka police', 'PALATKA POLICE DEPARTMENT'),
+    ('interlachen police', 'INTERLACHEN POLICE DEPARTMENT'),
+    ('welaka police', 'WELAKA POLICE DEPARTMENT'),
+    ('florida highway patrol', 'FLORIDA HIGHWAY PATROL'),
+    ('fish and wildlife', 'FISH AND WILDLIFE'),
+]
+_AGENCY_PAREN_RE = re.compile(r'\(([^)]+)\)')
+
+
+def _normalize_agency(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    s = raw.strip()
+    if not s:
+        return None
+    up = s.upper()
+    if up in _AGENCY_EXACT:
+        return _AGENCY_EXACT[up]
+    low = s.lower()
+    for sub, canonical in _AGENCY_SUBSTR:
+        if sub in low:
+            return canonical
+    return s
+
+
+def _extract_agency_from_case(case_number: Optional[str]) -> Optional[str]:
+    if not case_number:
+        return None
+    m = _AGENCY_PAREN_RE.search(case_number)
+    if not m:
+        return None
+    return _normalize_agency(m.group(1))
 
 
 def _to_utc_iso_safe(date_str: str) -> Optional[str]:
@@ -395,6 +440,7 @@ def _extract_charges_from_table(table) -> List[Dict[str, Any]]:
                 'statute': statute,
                 'case_number': case_number,
                 'charge': charge,
+                'agency': _extract_agency_from_case(case_number),
                 'degree': degree,
                 'level': level,
                 'bond': bond,
@@ -628,7 +674,7 @@ def _parse_booking_from_text(
             charge_data = {
                 'statute': charge_match.group(1),
                 'case_number': charge_match.group(2),
-                'agency': charge_match.group(3),
+                'agency': _normalize_agency(charge_match.group(3)),
                 'charge': charge_match.group(4).strip(),
                 'degree': None,
                 'level': None,
@@ -823,6 +869,17 @@ def upsert_bookings(bookings: List[Dict[str, Any]], supabase: Client) -> Dict[st
         photo_failures = 0
         if PCSO_SYNC_PHOTOS:
             photos_synced, photo_failures = _sync_photos(bookings, supabase)
+
+        try:
+            supabase.rpc('refresh_booking_stats').execute()
+        except Exception as e:
+            logger.warning('refresh_booking_stats failed (non-fatal): %s', e)
+
+        try:
+            supabase.rpc('refresh_booked_persons').execute()
+        except Exception as e:
+            logger.warning('refresh_booked_persons failed (non-fatal): %s', e)
+
         return {
             'inserted': inserted,
             'updated': 0,
@@ -857,7 +914,7 @@ def _sync_charges(
                 'charge': charge.get('charge', ''),
                 'statute': charge.get('statute', ''),
                 'case_number': charge.get('case_number', ''),
-                'agency': charge.get('agency', ''),
+                'agency': charge.get('agency') or '',
                 'degree': charge.get('degree', ''),
                 'level': charge.get('level', ''),
                 'bond': charge.get('bond', ''),
@@ -872,20 +929,54 @@ def _sync_charges(
 def _sync_photos(bookings: List[Dict[str, Any]], supabase: Client) -> tuple[int, int]:
     if not SUPABASE_URL:
         return (0, 0)
+
     public_base = f'{SUPABASE_URL}/storage/v1/object/public/{PCSO_PHOTOS_BUCKET}/'
     storage = supabase.storage.from_(PCSO_PHOTOS_BUCKET)
     synced = 0
     failed = 0
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Referer': 'https://smartweb.pcso.us/smartwebclient/jail.aspx',
+    }
+
     for booking in bookings:
         booking_no = booking.get('booking_no') or booking.get('bookingNo')
         if not booking_no:
             continue
+
         photo_url = booking.get('photo_url') or f'{PCSO_PHOTO_BASE_URL}{booking_no}'
+
         try:
-            resp = requests.get(photo_url, timeout=20)
-            content_type = resp.headers.get('content-type', 'image/jpeg')
-            if resp.status_code != 200 or 'image' not in content_type:
+            resp = requests.get(
+                photo_url,
+                timeout=20,
+                headers=headers,
+                allow_redirects=True,
+            )
+
+            content_type = resp.headers.get('content-type', '')
+            logger.info(
+                '🖼️ Photo check %s -> status=%s content-type=%s final-url=%s',
+                booking_no,
+                resp.status_code,
+                content_type,
+                resp.url,
+            )
+
+            if resp.status_code != 200:
+                logger.info('🖼️ Skipping %s: non-200 response', booking_no)
                 continue
+
+            if 'image' not in content_type.lower():
+                logger.info(
+                    '🖼️ Skipping %s: response is not an image. First 120 chars: %s',
+                    booking_no,
+                    resp.text[:120].replace('\n', ' ').replace('\r', ' '),
+                )
+                continue
+
             storage.upload(
                 f'{booking_no}.jpg',
                 resp.content,
@@ -894,13 +985,17 @@ def _sync_photos(bookings: List[Dict[str, Any]], supabase: Client) -> tuple[int,
                     'upsert': 'true',
                 },
             )
+
             supabase.table(PCSO_BOOKINGS_TABLE).update(
                 {'photo_url': f'{public_base}{booking_no}.jpg'},
             ).eq('booking_no', booking_no).execute()
+
             synced += 1
+
         except Exception as e:
             logger.warning('⚠️  Photo sync failed for %s: %s', booking_no, e)
             failed += 1
+
     logger.info(f'🖼️  Photos synced: {synced} (failed: {failed})')
     return (synced, failed)
 
