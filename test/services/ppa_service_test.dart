@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:putnamlife/exceptions/app_exceptions.dart';
-import 'package:putnamlife/services/ppa_service.dart';
+import 'package:putnam_app/exceptions/app_exceptions.dart';
+import 'package:putnam_app/services/ppa_service.dart';
 
 // These tests cover the guard clauses that short-circuit before the Supabase
 // client is touched. End-to-end happy-path coverage (network + ppa schema

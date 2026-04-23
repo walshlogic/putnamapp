@@ -96,7 +96,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
     final articlesAsync = ref.watch(newsArticlesProvider(filters));
 
     return Scaffold(
-      appBar: const putnamlifeBar(showBackButton: true),
+      appBar: const PutnamAppBar(showBackButton: true),
       drawer: const AppDrawer(),
       endDrawer: const SettingsDrawer(),
       body: Column(
