@@ -44,6 +44,23 @@ Running log of known issues encountered during data imports (PCSO jail log, PPA 
 - **Fix applied:** created empty `public.booking_stats (stat_key text primary key, count integer default 0, updated_at timestamptz default now())` with RLS + public-read policy. App's existing fallback now kicks in cleanly — counts on-the-fly in ~2 sec instead of erroring.
 - **Future optimization:** populate `booking_stats` rows for `total_all`, `in_jail_all`, `released_all` to make ALL filter instant instead of 2 sec on-the-fly count.
 
+### [RESOLVED 2026-04-23] `flutter run --release` crashes with "Missing SUPABASE_URL or SUPABASE_ANON_KEY in --dart-define"
+
+- **Symptom:** after merging Cowork's rebrand commit, running `flutter run --release -d <iphone>` without explicit `--dart-define` args loads the app to a red error screen: `App Initialization Error — Exception: Missing SUPABASE_URL or SUPABASE_ANON_KEY in --dart-define`.
+- **Root cause:** Cowork's rebrand (commit `19ff2b3`) rewrote `lib/config/app_config.dart` to use `String.fromEnvironment('SUPABASE_URL')` etc. — **compile-time** env vars from `--dart-define`. Dropped the previous `flutter_env.json` runtime-load fallback. This matches how TestFlight builds work (the build command passes `--dart-define`), but `flutter run` does not auto-forward env from any source.
+- **Fix / how to run release-debug on device:** pass all 6 vars on the command line, sourced from `flutter_env.json`:
+  ```bash
+  cd /Users/walshwill/Putnam+Life/App/putnamlife
+  DEFINES=$(python3 -c "
+  import json
+  d = json.load(open('flutter_env.json'))
+  for k in ('SUPABASE_URL','SUPABASE_ANON_KEY','REVENUECAT_IOS_API_KEY','REVENUECAT_ANDROID_API_KEY','WEATHER_LAT','WEATHER_LON'):
+      if k in d: print(f'--dart-define={k}={d[k]}')
+  ")
+  flutter run --release -d <device-id> $DEFINES
+  ```
+  Same pattern for `flutter build ipa` when cutting TestFlight builds.
+
 ### [RESOLVED 2026-04-22] psql direct connection IPv6-only from user's home network
 
 - **Symptom:** `psql: could not translate host name "db.<ref>.supabase.co"` during PPA TRIM ingest.
