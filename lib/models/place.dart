@@ -93,15 +93,73 @@ class Place {
     return phone;
   }
 
-  /// Check if place is open now (simplified version)
+  /// Check if place is open now based on the `hours` map.
+  ///
+  /// Supports common formats stored per day:
+  /// - `"9:00 AM - 5:00 PM"` (12-hour with AM/PM)
+  /// - `"09:00 - 17:00"` (24-hour)
+  /// - `"11:00 AM - 2:00 PM, 5:00 PM - 9:00 PM"` (split shifts)
+  /// - `"9:00 PM - 2:00 AM"` (overnight; matches if "now" is past close
+  ///   on either calendar day in the range)
+  /// - `"24 hours"`, `"24/7"`, `"Open 24 hours"` → always open
+  /// - `"Closed"`, missing entry, unparseable values → closed
   bool get isOpenNow {
     if (hours == null) return false;
     final now = DateTime.now();
-    final dayName = _getDayName(now.weekday);
-    final todayHours = hours![dayName.toLowerCase()];
-    if (todayHours == null || todayHours == 'Closed') return false;
-    // TODO: Parse hours and check if current time is within range
-    return true; // Simplified for now
+    final dayName = _getDayName(now.weekday).toLowerCase();
+    final raw = hours![dayName];
+    if (raw is! String) return false;
+    return _isOpenInString(raw, now);
+  }
+
+  static final RegExp _timeRe = RegExp(
+    r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)?',
+    caseSensitive: false,
+  );
+
+  /// Public for testing — true when `now` falls within any range described
+  /// by `hoursString` for the day. Returns false on unparseable input.
+  static bool _isOpenInString(String hoursString, DateTime now) {
+    final s = hoursString.trim();
+    if (s.isEmpty) return false;
+    final lower = s.toLowerCase();
+    if (lower == 'closed') return false;
+    if (lower.contains('24 hour') || lower == '24/7' || lower == 'open 24 hours') {
+      return true;
+    }
+    final nowMinutes = now.hour * 60 + now.minute;
+    // Multiple ranges separated by commas (split shifts).
+    for (final range in s.split(',')) {
+      // Accept hyphen, en-dash, em-dash, or " to "
+      final parts = range.split(RegExp(r'\s*(?:-|–|—|\bto\b)\s*'));
+      if (parts.length != 2) continue;
+      final open = _parseTimeToMinutes(parts[0]);
+      final close = _parseTimeToMinutes(parts[1]);
+      if (open == null || close == null) continue;
+      if (close > open) {
+        if (nowMinutes >= open && nowMinutes < close) return true;
+      } else {
+        // Overnight (e.g. 9 PM - 2 AM): open OR before close on next day.
+        if (nowMinutes >= open || nowMinutes < close) return true;
+      }
+    }
+    return false;
+  }
+
+  /// Parses a time fragment into minutes-from-midnight. Returns null on
+  /// failure. Accepts "9", "9:30", "9 AM", "09:30", "9:30 PM", etc.
+  static int? _parseTimeToMinutes(String input) {
+    final m = _timeRe.firstMatch(input.trim());
+    if (m == null) return null;
+    var hour = int.tryParse(m.group(1) ?? '');
+    final minute = int.tryParse(m.group(2) ?? '0') ?? 0;
+    final ampm = m.group(3)?.toLowerCase();
+    if (hour == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+    if (ampm == 'pm' && hour < 12) hour += 12;
+    if (ampm == 'am' && hour == 12) hour = 0;
+    return hour * 60 + minute;
   }
 
   String _getDayName(int weekday) {

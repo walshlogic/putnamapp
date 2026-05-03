@@ -175,7 +175,7 @@ class SettingsDrawer extends ConsumerWidget {
     required IconData icon,
     required String title,
     required String subtitle,
-    VoidCallback? onTap,
+    required VoidCallback onTap,
   }) {
     final appColors = Theme.of(context).extension<AppColors>()!;
 
@@ -201,11 +201,7 @@ class SettingsDrawer extends ConsumerWidget {
         style: TextStyle(fontSize: 12, color: appColors.textLight),
       ),
       trailing: Icon(Icons.chevron_right, color: appColors.divider),
-      onTap:
-          onTap ??
-          () {
-            // TODO: Navigate to setting detail screens
-          },
+      onTap: onTap,
     );
   }
 
