@@ -163,88 +163,6 @@ class PutnamApp extends ConsumerStatefulWidget {
 
 class _PutnamAppState extends ConsumerState<PutnamApp> {
   GoRouter? _router;
-  bool _ackDialogShown = false;
-
-  String _platformLabel() {
-    if (kIsWeb) {
-      return 'web';
-    }
-    return defaultTargetPlatform.name;
-  }
-
-  Future<void> _logAcknowledgement() async {
-    final client = Supabase.instance.client;
-    final userId = client.auth.currentUser?.id;
-    try {
-      await client.from('acknowledge_log').insert({
-        'user_id': userId,
-        'acknowledged_at': DateTime.now().toUtc().toIso8601String(),
-        'ack_version': 'v1',
-        'platform': _platformLabel(),
-      });
-    } catch (e) {
-      debugPrint('❌ Acknowledge log insert failed: $e');
-    }
-  }
-
-  Future<void> _showAcknowledgementDialog(BuildContext context) async {
-    bool acknowledged = false;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, void Function(void Function()) setState) {
-            return AlertDialog(
-              title: const Text('IMPORTANT NOTICE'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Text(
-                      '- Putnam+Life is Provided for Informational Purposes Only.\n'
-                      '- The App Displays Public Sourced Data.\n'
-                      '- No Warranties On Accuracy, Completeness, and Errors.\n'
-                      '- Do Not Rely on This App To Make Decisions.\n'
-                      '- You Are Responsible for Independently Verifying Data.',
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: <Widget>[
-                        Checkbox(
-                          value: acknowledged,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              acknowledged = value ?? false;
-                            });
-                          },
-                        ),
-                        const Expanded(child: Text('I ACKOWLEDGE')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                ElevatedButton(
-                  onPressed: acknowledged
-                      ? () async {
-                          await _logAcknowledgement();
-                          if (mounted) {
-                            Navigator.of(dialogContext).pop();
-                          }
-                        }
-                      : null,
-                  child: const Text('CONTINUE'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -276,16 +194,6 @@ class _PutnamAppState extends ConsumerState<PutnamApp> {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
-        }
-        if (!_ackDialogShown) {
-          _ackDialogShown = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final navContext =
-                _router?.routerDelegate.navigatorKey.currentContext;
-            if (mounted && navContext != null) {
-              _showAcknowledgementDialog(navContext);
-            }
-          });
         }
         return child;
       },

@@ -649,29 +649,6 @@ CREATE POLICY "Anyone can read top 100 lists"
 
 
 -- ============================================================
--- SECTION 12: ACKNOWLEDGE LOG
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS public.acknowledge_log (
-  id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         uuid,
-  acknowledged_at timestamptz NOT NULL DEFAULT now(),
-  ack_version     text        NOT NULL DEFAULT 'v1',
-  platform        text
-);
-
-ALTER TABLE public.acknowledge_log ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can insert acknowledgements"
-  ON public.acknowledge_log FOR INSERT TO public
-  WITH CHECK (true);
-
-CREATE POLICY "Users can read their acknowledgements"
-  ON public.acknowledge_log FOR SELECT TO authenticated
-  USING (user_id = auth.uid());
-
-
--- ============================================================
 -- SECTION 13: CALCULATE TOP 100 LISTS FUNCTION
 -- Calculates all lists for THISYEAR, 5YEARS, and ALL.
 -- Call: SELECT calculate_top_100_lists();
