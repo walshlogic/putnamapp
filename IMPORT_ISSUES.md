@@ -44,6 +44,18 @@ Running log of known issues encountered during data imports (PCSO jail log, PPA 
 - **Fix applied:** created empty `public.booking_stats (stat_key text primary key, count integer default 0, updated_at timestamptz default now())` with RLS + public-read policy. App's existing fallback now kicks in cleanly — counts on-the-fly in ~2 sec instead of erroring.
 - **Future optimization:** populate `booking_stats` rows for `total_all`, `in_jail_all`, `released_all` to make ALL filter instant instead of 2 sec on-the-fly count.
 
+### [RESOLVED 2026-04-24] `flutter pub get` returns 403 on pub.dev advisories endpoint
+
+- **Symptom:** `flutter pub get` (and any flutter command that calls it implicitly, like `flutter build ipa`) fails partway through with a "Failed to update packages" error and a noisy stack trace pointing into `HostedSource._fetchAdvisories`. Looking at `~/.pub-cache/log/pub_log.txt` shows `HTTP response 403 Forbidden for GET https://pub.dev/api/packages/<name>/advisories` for every package.
+- **Root cause:** the office network blocks pub.dev's `/advisories` endpoint specifically. Other pub.dev endpoints (package metadata, tarballs) seem to be allowed; only the security-advisories API is being denied. Pub treats any 403 from advisories as fatal.
+- **Workaround:** use `--offline` + `--no-pub` when on a network that blocks the endpoint. Local cache is at `~/.pub-cache/` and contains everything needed if pub get has succeeded once before:
+  ```bash
+  flutter pub get --offline
+  flutter build ipa --release --no-pub --dart-define=...
+  ```
+- **Fix in build_testflight.sh:** the script now tries online pub get first, falls back to `--offline` if it fails, and passes `--no-pub` to `flutter build ipa` so the inner pub get doesn't re-trigger the failure.
+- **Permanent fix (when on a non-blocking network):** `flutter pub get` once to refresh the lock file. No code change needed.
+
 ### [RESOLVED 2026-04-23] `flutter run --release` crashes with "Missing SUPABASE_URL or SUPABASE_ANON_KEY in --dart-define"
 
 - **Symptom:** after merging Cowork's rebrand commit, running `flutter run --release -d <iphone>` without explicit `--dart-define` args loads the app to a red error screen: `App Initialization Error — Exception: Missing SUPABASE_URL or SUPABASE_ANON_KEY in --dart-define`.

@@ -71,11 +71,24 @@ fi
 echo "▶ flutter clean"
 /opt/homebrew/bin/flutter clean > /dev/null
 
+# Try online pub get first; if it fails (e.g., pub.dev advisories endpoint
+# returning 403 on some networks), fall back to --offline using cached deps.
 echo "▶ flutter pub get"
-/opt/homebrew/bin/flutter pub get > /dev/null
+if ! /opt/homebrew/bin/flutter pub get > /dev/null 2>&1; then
+  echo "   online pub get failed — retrying with --offline (uses ~/.pub-cache)"
+  /opt/homebrew/bin/flutter pub get --offline > /dev/null
+  PUB_OFFLINE=1
+else
+  PUB_OFFLINE=0
+fi
 
-echo "▶ flutter build ipa --release (with ${#DEFINES[@]} --dart-define args)"
-/opt/homebrew/bin/flutter build ipa --release "${DEFINES[@]}"
+# When pub get came from cache, also pass --no-pub to flutter build so it
+# doesn't re-run a network pub get internally and crash on the same 403.
+BUILD_FLAGS=()
+[[ "$PUB_OFFLINE" == "1" ]] && BUILD_FLAGS+=(--no-pub)
+
+echo "▶ flutter build ipa --release ${BUILD_FLAGS[*]} (with ${#DEFINES[@]} --dart-define args)"
+/opt/homebrew/bin/flutter build ipa --release "${BUILD_FLAGS[@]}" "${DEFINES[@]}"
 
 IPA=$(ls -t "$REPO"/build/ios/ipa/*.ipa 2>/dev/null | head -1)
 if [[ -z "$IPA" ]]; then
