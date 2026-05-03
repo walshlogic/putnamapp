@@ -209,7 +209,7 @@ class _OriRecordsScreenState extends ConsumerState<OriRecordsScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: results.records.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (BuildContext ctx, int i) {
                     final OriRecord r = results.records[i];
                     return _OriRecordTile(record: r);

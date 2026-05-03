@@ -454,7 +454,7 @@ class TierSelectionScreen extends ConsumerWidget {
   }) {
     final appColors = context.appColors;
     final primaryPurple = appColors.primaryPurple;
-    final lightPurple = appColors.primaryPurple.withOpacity(0.7);
+    final lightPurple = appColors.primaryPurple.withValues(alpha: 0.7);
     final goldDark = appColors.accentGoldDark;
     return Container(
       decoration: BoxDecoration(

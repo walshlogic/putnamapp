@@ -688,6 +688,8 @@ class BookingDetailScreen extends ConsumerWidget {
       },
     );
 
+    if (!context.mounted) return;
+
     switch (action) {
       case _CommentAction.edit:
         await _openEditCommentScreen(context, ref, comment);

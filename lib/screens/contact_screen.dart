@@ -331,57 +331,35 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 8),
-                          Column(
-                            children: [
-                              RadioListTile<String>(
-                                title: const Text('GENERAL'),
-                                value: 'GENERAL',
-                                groupValue: _selectedDepartment,
-                                onChanged: (String? value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      _selectedDepartment = value;
-                                    });
-                                  }
-                                },
-                              ),
-                              RadioListTile<String>(
-                                title: const Text('SUPPORT'),
-                                value: 'SUPPORT',
-                                groupValue: _selectedDepartment,
-                                onChanged: (String? value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      _selectedDepartment = value;
-                                    });
-                                  }
-                                },
-                              ),
-                              RadioListTile<String>(
-                                title: const Text('SALES'),
-                                value: 'SALES',
-                                groupValue: _selectedDepartment,
-                                onChanged: (String? value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      _selectedDepartment = value;
-                                    });
-                                  }
-                                },
-                              ),
-                              RadioListTile<String>(
-                                title: const Text('REQUEST'),
-                                value: 'REQUEST',
-                                groupValue: _selectedDepartment,
-                                onChanged: (String? value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      _selectedDepartment = value;
-                                    });
-                                  }
-                                },
-                              ),
-                            ],
+                          RadioGroup<String>(
+                            groupValue: _selectedDepartment,
+                            onChanged: (String? value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedDepartment = value;
+                                });
+                              }
+                            },
+                            child: const Column(
+                              children: [
+                                RadioListTile<String>(
+                                  title: Text('GENERAL'),
+                                  value: 'GENERAL',
+                                ),
+                                RadioListTile<String>(
+                                  title: Text('SUPPORT'),
+                                  value: 'SUPPORT',
+                                ),
+                                RadioListTile<String>(
+                                  title: Text('SALES'),
+                                  value: 'SALES',
+                                ),
+                                RadioListTile<String>(
+                                  title: Text('REQUEST'),
+                                  value: 'REQUEST',
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 16),
 

@@ -99,11 +99,12 @@ class _BookingPhotoProgressionScreenState
     } catch (_) {
       // Ignore cache errors and continue with playback.
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isPreloading = false;
-      });
-      _startPlayback(frames.length);
+      if (mounted) {
+        setState(() {
+          _isPreloading = false;
+        });
+        _startPlayback(frames.length);
+      }
     }
   }
 
