@@ -87,8 +87,15 @@ fi
 BUILD_FLAGS=()
 [[ "$PUB_OFFLINE" == "1" ]] && BUILD_FLAGS+=(--no-pub)
 
-echo "▶ flutter build ipa --release ${BUILD_FLAGS[*]} (with ${#DEFINES[@]} --dart-define args)"
-/opt/homebrew/bin/flutter build ipa --release "${BUILD_FLAGS[@]}" "${DEFINES[@]}"
+echo "▶ flutter build ipa --release ${BUILD_FLAGS[*]:-} (with ${#DEFINES[@]} --dart-define args)"
+# Note: must NOT expand BUILD_FLAGS unconditionally — under `set -u`,
+# empty-array expansion produces a single "" arg that Flutter treats as
+# the target file, breaking the build. Branch on length instead.
+if [[ ${#BUILD_FLAGS[@]} -gt 0 ]]; then
+  /opt/homebrew/bin/flutter build ipa --release "${BUILD_FLAGS[@]}" "${DEFINES[@]}"
+else
+  /opt/homebrew/bin/flutter build ipa --release "${DEFINES[@]}"
+fi
 
 IPA=$(ls -t "$REPO"/build/ios/ipa/*.ipa 2>/dev/null | head -1)
 if [[ -z "$IPA" ]]; then
