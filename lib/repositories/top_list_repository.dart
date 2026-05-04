@@ -6,29 +6,27 @@ import '../exceptions/app_exceptions.dart';
 import '../models/top_list_item.dart';
 import '../services/supabase_service.dart';
 
-/// Abstract repository for Top 100 list operations
+/// Abstract repository for Top 100 list operations.
+///
+/// Pre-calculated ranges: 'YTD', '12MONTHS', '24MONTHS', '36MONTHS' — all
+/// refreshed nightly at 4 AM by `public.calculate_top_100_lists()`. For an
+/// arbitrary user-picked date range, use [getTopForCustomRange] which
+/// invokes the live `public.top_100_for_custom_range()` Postgres function.
 abstract class TopListRepository {
-  /// Get Top 100 arrested persons (by booking count)
-  /// timeRange: 'THISYEAR', '5YEARS', or 'ALL'
-  Future<List<TopListItem>> getTopArrestedPersons({String timeRange = 'ALL'});
+  Future<List<TopListItem>> getTopArrestedPersons({String timeRange = 'YTD'});
+  Future<List<TopListItem>> getTopFelonyCharges({String timeRange = 'YTD'});
+  Future<List<TopListItem>> getTopMisdemeanorCharges({String timeRange = 'YTD'});
+  Future<List<TopListItem>> getTopAllCharges({String timeRange = 'YTD'});
+  Future<List<TopListItem>> getTopBookingDays({String timeRange = 'YTD'});
 
-  /// Get Top 100 felony charges (any degree)
-  /// timeRange: 'THISYEAR', '5YEARS', or 'ALL'
-  Future<List<TopListItem>> getTopFelonyCharges({String timeRange = 'ALL'});
-
-  /// Get Top 100 misdemeanor charges
-  /// timeRange: 'THISYEAR', '5YEARS', or 'ALL'
-  Future<List<TopListItem>> getTopMisdemeanorCharges({
-    String timeRange = 'ALL',
+  /// Live custom date range query. `category` matches the same set used by
+  /// the pre-calculated lists (arrested_persons, felony_charges, etc.).
+  /// Both dates are inclusive.
+  Future<List<TopListItem>> getTopForCustomRange({
+    required String category,
+    required DateTime start,
+    required DateTime end,
   });
-
-  /// Get Top 100 all charges (felony and misdemeanor combined)
-  /// timeRange: 'THISYEAR', '5YEARS', or 'ALL'
-  Future<List<TopListItem>> getTopAllCharges({String timeRange = 'ALL'});
-
-  /// Get Top 100 booking days (days with most bookings)
-  /// timeRange: 'THISYEAR', '5YEARS', or 'ALL'
-  Future<List<TopListItem>> getTopBookingDays({String timeRange = 'ALL'});
 }
 
 /// Supabase implementation of TopListRepository
@@ -122,34 +120,86 @@ class SupabaseTopListRepository implements TopListRepository {
 
   @override
   Future<List<TopListItem>> getTopArrestedPersons({
-    String timeRange = 'ALL',
+    String timeRange = 'YTD',
   }) async {
     return _getPreCalculatedList('arrested_persons', timeRange);
   }
 
   @override
   Future<List<TopListItem>> getTopFelonyCharges({
-    String timeRange = 'ALL',
+    String timeRange = 'YTD',
   }) async {
     return _getPreCalculatedList('felony_charges', timeRange);
   }
 
   @override
   Future<List<TopListItem>> getTopMisdemeanorCharges({
-    String timeRange = 'ALL',
+    String timeRange = 'YTD',
   }) async {
     return _getPreCalculatedList('misdemeanor_charges', timeRange);
   }
 
   @override
-  Future<List<TopListItem>> getTopAllCharges({String timeRange = 'ALL'}) async {
+  Future<List<TopListItem>> getTopAllCharges({String timeRange = 'YTD'}) async {
     return _getPreCalculatedList('all_charges', timeRange);
   }
 
   @override
   Future<List<TopListItem>> getTopBookingDays({
-    String timeRange = 'ALL',
+    String timeRange = 'YTD',
   }) async {
     return _getPreCalculatedList('booking_days', timeRange);
+  }
+
+  @override
+  Future<List<TopListItem>> getTopForCustomRange({
+    required String category,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    try {
+      final String startIso = _yyyymmdd(start);
+      final String endIso = _yyyymmdd(end);
+      debugPrint(
+        '[TopList] Custom range: $category from $startIso to $endIso',
+      );
+      final dynamic response = await _client
+          .rpc(
+            'top_100_for_custom_range',
+            params: <String, dynamic>{
+              'p_category': category,
+              'p_start': startIso,
+              'p_end': endIso,
+            },
+          )
+          .timeout(AppConfig.defaultTimeout);
+      final List<dynamic> rows = response as List<dynamic>;
+      debugPrint('[TopList] Custom range returned ${rows.length} rows');
+      return rows.map((row) {
+        final Map<String, dynamic> r = row as Map<String, dynamic>;
+        return TopListItem(
+          rank: r['rank'] as int,
+          label: r['label'] as String,
+          count: r['count'] as int,
+          subtitle: r['subtitle'] as String?,
+          extraData: r['extra_data'] as Map<String, dynamic>?,
+        );
+      }).toList();
+    } catch (e) {
+      if (e is PostgrestException) {
+        throw DatabaseException(
+          'Failed to fetch custom-range top 100 for $category',
+          e,
+        );
+      }
+      throw DatabaseException('Failed to load custom-range top list: $e');
+    }
+  }
+
+  static String _yyyymmdd(DateTime d) {
+    final String y = d.year.toString().padLeft(4, '0');
+    final String m = d.month.toString().padLeft(2, '0');
+    final String day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
   }
 }

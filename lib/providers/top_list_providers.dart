@@ -38,3 +38,17 @@ final topBookingDaysProvider = FutureProvider.family<List<TopListItem>, String>(
   return repository.getTopBookingDays(timeRange: timeRange);
 });
 
+/// Live custom date range query — calls Postgres function
+/// `top_100_for_custom_range`. Not pre-cached on the server side.
+final topListCustomRangeProvider = FutureProvider.family<
+    List<TopListItem>, ({String category, DateTime start, DateTime end})>(
+  (ref, args) async {
+    final repository = ref.watch(topListRepositoryProvider);
+    return repository.getTopForCustomRange(
+      category: args.category,
+      start: args.start,
+      end: args.end,
+    );
+  },
+);
+

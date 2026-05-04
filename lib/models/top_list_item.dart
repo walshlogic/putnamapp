@@ -19,6 +19,25 @@ class TopListItem {
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
         (Match m) => '${m[1]},',
       );
+
+  /// Total charges across this person's bookings in the active time window.
+  /// Populated for arrested_persons rows by calculate_top_100_lists(); null
+  /// for other categories.
+  int? get chargesCount {
+    final dynamic v = extraData?['charges_count'];
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  String? get formattedChargesCount {
+    final int? c = chargesCount;
+    if (c == null) return null;
+    return c.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
+  }
 }
 
 /// Category types for Top 100 lists
