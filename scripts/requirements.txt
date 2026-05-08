@@ -1,0 +1,14 @@
+# Python dependencies for the scripts in this folder.
+# Install into the project venv:
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r scripts/requirements.txt
+
+supabase>=2.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+urllib3<2
+
+# RSS / HTML parsing (import_news.py, scrapers)
+feedparser>=6.0.10
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
