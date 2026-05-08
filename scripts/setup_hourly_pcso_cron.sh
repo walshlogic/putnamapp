@@ -3,13 +3,14 @@
 # This script adds a cron job to run import_pcso_bookings.py every hour
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CRON_LOG="$SCRIPT_DIR/logs/pcso_bookings_import.log"
+REPO_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+CRON_LOG="$REPO_DIR/logs/pcso_bookings_import.log"
 
 # Create logs directory if it doesn't exist
-mkdir -p "$SCRIPT_DIR/logs"
+mkdir -p "$REPO_DIR/logs"
 
 # Create cron entry (runs hourly at :05)
-CRON_ENTRY="5 * * * * cd $SCRIPT_DIR && /usr/bin/python3 import_pcso_bookings.py >> $CRON_LOG 2>&1"
+CRON_ENTRY="5 * * * * cd $REPO_DIR && /usr/bin/python3 $SCRIPT_DIR/import_pcso_bookings.py >> $CRON_LOG 2>&1"
 
 # Check if cron job already exists
 if crontab -l 2>/dev/null | grep -q "import_pcso_bookings.py"; then

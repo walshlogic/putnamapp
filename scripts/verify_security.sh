@@ -2,6 +2,11 @@
 # Security Verification Script
 # Run this before App Store submission
 
+# Always run from repo root so the relative paths below resolve correctly,
+# regardless of where the user invokes this script from.
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR/.."
+
 echo "🔒 Security Verification Checklist"
 echo "===================================="
 echo ""

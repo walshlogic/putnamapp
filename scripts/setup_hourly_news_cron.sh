@@ -3,16 +3,17 @@
 # This script adds a cron job to run import_news.py every hour
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CRON_LOG="$SCRIPT_DIR/logs/news_import.log"
+REPO_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+CRON_LOG="$REPO_DIR/logs/news_import.log"
 
 # Create logs directory if it doesn't exist
-mkdir -p "$SCRIPT_DIR/logs"
+mkdir -p "$REPO_DIR/logs"
 
 # Create cron entry (runs at :03 of every hour — offset from PCSO's :54 and :05 cron to spread out load)
 # Uses the project venv python (has feedparser, beautifulsoup4 installed).
-PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python3"
+PYTHON_BIN="$REPO_DIR/.venv/bin/python3"
 [ -x "$PYTHON_BIN" ] || PYTHON_BIN="/usr/bin/python3"
-CRON_ENTRY="3 * * * * cd $SCRIPT_DIR && $PYTHON_BIN import_news.py >> $CRON_LOG 2>&1"
+CRON_ENTRY="3 * * * * cd $REPO_DIR && $PYTHON_BIN $SCRIPT_DIR/import_news.py >> $CRON_LOG 2>&1"
 
 # Check if cron job already exists
 if crontab -l 2>/dev/null | grep -q "import_news.py"; then

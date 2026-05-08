@@ -10,7 +10,7 @@ folder.
   - `SUPABASE_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`
 - Install Python deps (prevents the urllib3 LibreSSL warning):
-  - `pip3 install -r ../requirements_traffic_citations.txt`
+  - `pip3 install -r ../scripts/requirements.txt`
   - Optional:
     - `CLERK_OF_COURT_URL`
     - `TRAFFIC_HISTORY_DOWNLOAD_URL`

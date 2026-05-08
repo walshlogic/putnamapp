@@ -14,9 +14,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATA_DIR="$SCRIPT_DIR/zClerkDataUpdate"
-LOG_FILE="$SCRIPT_DIR/logs/clerk_update.log"
-PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python3"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DATA_DIR="$REPO_DIR/zClerkDataUpdate"
+LOG_FILE="$REPO_DIR/logs/clerk_update.log"
+PYTHON_BIN="$REPO_DIR/.venv/bin/python3"
 [ -x "$PYTHON_BIN" ] || PYTHON_BIN="/usr/bin/python3"
 
 CRON_SCRIPT="$DATA_DIR/clerk_data_update_all.py"
@@ -28,11 +29,11 @@ CRON_ENTRY="$CRON_TIME_MIN $CRON_TIME_HOUR * * * cd $DATA_DIR && $PYTHON_BIN $CR
 # before PCSO scrape at :54). Recomputes the YTD/12/24/36-month
 # pre-calculated rankings via the calculate_top_100_lists() Postgres
 # function, called through the Management API helper.
-TOP100_LOG="$SCRIPT_DIR/logs/top_100_refresh.log"
-TOP100_HELPER="$SCRIPT_DIR/ingest/ppa_trim/scripts/mgmt_api_load.sh"
-TOP100_ENTRY="0 4 * * * cd $SCRIPT_DIR && $TOP100_HELPER \"select public.calculate_top_100_lists();\" >> $TOP100_LOG 2>&1"
+TOP100_LOG="$REPO_DIR/logs/top_100_refresh.log"
+TOP100_HELPER="$REPO_DIR/ingest/ppa_trim/scripts/mgmt_api_load.sh"
+TOP100_ENTRY="0 4 * * * cd $REPO_DIR && $TOP100_HELPER \"select public.calculate_top_100_lists();\" >> $TOP100_LOG 2>&1"
 
-mkdir -p "$SCRIPT_DIR/logs"
+mkdir -p "$REPO_DIR/logs"
 
 if [[ ! -f "$CRON_SCRIPT" ]]; then
   echo "❌ $CRON_SCRIPT not found" >&2
@@ -42,7 +43,7 @@ fi
 echo "=========================================="
 echo "Daily Clerk of Court + Top 100 Setup"
 echo "=========================================="
-echo "  Repo:        $SCRIPT_DIR"
+echo "  Repo:        $REPO_DIR"
 echo "  Data dir:    $DATA_DIR"
 echo "  Python:      $PYTHON_BIN"
 echo "  Clerk job:   3:30 AM daily — clerk_data_update_all.py"
