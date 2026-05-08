@@ -19,7 +19,8 @@ build/
 *.ipr
 *.iws
 .idea/
-.vscode/
+.vscode/*
+!.vscode/launch.json
 *.swp
 *.swo
 *~
