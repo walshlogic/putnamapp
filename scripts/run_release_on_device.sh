@@ -3,18 +3,20 @@
 # forwarding all flutter_env.json values as --dart-define.
 #
 # Usage:
-#   ./run_release_on_device.sh                # picks first iOS device found
-#   ./run_release_on_device.sh <device-id>    # use specific device
+#   ./scripts/run_release_on_device.sh                # picks first physical iOS device
+#   ./scripts/run_release_on_device.sh <device-id>    # use specific device
 #
+# For debug mode (faster, hot-reload, picks simulator too): use run_debug_on_device.sh
 # List devices: flutter devices
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$REPO"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_DIR"
 
 ENV_FILE="flutter_env.json"
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "❌ $ENV_FILE not found" >&2
+  echo "❌ $ENV_FILE not found at $REPO_DIR" >&2
   exit 1
 fi
 
@@ -30,7 +32,7 @@ try:
 except Exception:
     pass
 ")
-  [[ -z "$DEVICE_ID" ]] && { echo "❌ no iOS device detected. connect one or pass id"; exit 2; }
+  [[ -z "$DEVICE_ID" ]] && { echo "❌ no physical iOS device detected. connect one or pass id"; exit 2; }
   echo "▶ auto-picked device: $DEVICE_ID"
 fi
 
