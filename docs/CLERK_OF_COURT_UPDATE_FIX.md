@@ -31,29 +31,25 @@ However, new data is available on the website:
 Run the setup script to update your cron jobs:
 
 ```bash
-cd /Users/willwalsh/PutnamApp/App
-bash setup_daily_cron.sh
+cd /Users/walshwill/Putnam+Life/App/putnamlife
+bash scripts/setup_daily_cron.sh
 ```
 
-This will:
-- Replace the old traffic citations cron job with the correct one
-- Keep the criminal history cron job (which now includes download)
+This installs the combined runner (`zClerkDataUpdate/clerk_data_update_all.py`)
+plus the Top 100 daily refresh.
 
 ### Step 2: Test the Scripts Manually
 
-Before relying on cron, test the scripts manually:
+Before relying on cron, test the combined runner manually:
 
-#### Test Traffic Citations:
 ```bash
-cd /Users/willwalsh/PutnamApp/App
-python3 zClerkDataUpdate/daily_traffic_citations_update.py
+cd /Users/walshwill/Putnam+Life/App/putnamlife/zClerkDataUpdate
+/Users/walshwill/Putnam+Life/App/putnamlife/.venv/bin/python3 clerk_data_update_all.py
 ```
 
-#### Test Criminal Back History:
-```bash
-cd /Users/willwalsh/PutnamApp/App
-python3 zClerkDataUpdate/daily_criminal_back_history_update.py
-```
+This handles both traffic citations and criminal back history in one pass —
+extracts any ZIPs in `zClerkDataUpdate/`, imports them, deletes processed
+files. Safe to run with no files present.
 
 ### Step 3: Configure Download (Optional)
 
@@ -87,10 +83,10 @@ Check the logs to ensure scripts are running:
 
 ```bash
 # View traffic citations log
-tail -f /Users/willwalsh/PutnamApp/App/logs/traffic_citations_import.log
+tail -f /Users/walshwill/Putnam+Life/App/putnamlife/logs/traffic_citations_import.log
 
 # View criminal history log
-tail -f /Users/willwalsh/PutnamApp/App/logs/criminal_back_history_import.log
+tail -f /Users/walshwill/Putnam+Life/App/putnamlife/logs/criminal_back_history_import.log
 ```
 
 ## Manual Download (Fallback)
@@ -99,11 +95,11 @@ If automated download fails, you can manually download files:
 
 1. **Traffic History**:
    - Download from website to `zClerkDataUpdate/` folder
-   - Run: `python3 zClerkDataUpdate/import_traffic_citations_upsert.py`
+   - Run: `python3 scripts/import_traffic_citations_upsert.py`
 
 2. **Criminal Back History**:
    - Download from website to `zClerkDataUpdate/` folder
-   - Run: `python3 zClerkDataUpdate/import_criminal_back_history.py`
+   - Run: `python3 scripts/import_criminal_back_history.py`
 
 ## Troubleshooting
 
@@ -132,7 +128,7 @@ Check:
 
 ## Next Steps
 
-1. ✅ Update cron jobs using `setup_daily_cron.sh`
+1. ✅ Update cron jobs using `scripts/setup_daily_cron.sh`
 2. ✅ Test scripts manually
 3. ⏳ Get direct download URLs and add to `.env`
 4. ⏳ Monitor logs for a few days to ensure updates are working

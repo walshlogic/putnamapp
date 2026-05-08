@@ -1,124 +1,84 @@
 # Job Scripts and Cron Summary
 
-## 1) Jail Log (PCSO bookings)
-Purpose: Scrape PCSO jail log and upsert bookings/charges/photos.  
-Script: `import_pcso_bookings.py`  
-Cron setup: `setup_hourly_pcso_cron.sh`  
-Schedule: Hourly at :05 (from `setup_hourly_pcso_cron.sh`)  
-Log: `logs/pcso_bookings_import.log`
+Index of automated jobs that keep this app's data fresh. For manual update
+workflows (FDLE registry, Clerk weekly/yearly downloads), see
+[DATA_UPDATE_SCHEDULE.md](DATA_UPDATE_SCHEDULE.md).
+
+## Active scheduled jobs
+
+### 1) PCSO Jail Log scrape
+Source: live `jail.aspx` page → upserts `bookings`, `charges`, photos.
+Runs from a **separate repo** at `/Users/walshwill/pcso-scraper/`, NOT from
+this project. See `~/pcso-scraper/README.md` for that codebase.
+
+- Mechanism: launchd agent `com.pcso.scrape.hourly`
+- Schedule: hourly at :54 (with `RunAtLoad: true` for catch-up after reboot)
+- Log: `~/pcso-scraper/logs/launchd.{out,err}.log`
+
+The `scripts/import_pcso_bookings.py` and `scripts/backfill_pcso_bookings.py`
+in *this* repo are kept for ad-hoc / historical-backfill use only — they are
+not on a cron in this checkout.
+
+### 2) News import
+- Script: `scripts/import_news.py`
+- Cron setup: `scripts/setup_hourly_news_cron.sh`
+- Schedule: hourly at :03
+- Log: `logs/news_import.log`
 
 Run manually:
-```
-cd /Users/willwalsh/PutnamApp/App
-python3 import_pcso_bookings.py
-```
-
-View history:
-```
-tail -f /Users/willwalsh/PutnamApp/App/logs/pcso_bookings_import.log
-grep "$(date +%Y-%m-%d)" /Users/willwalsh/PutnamApp/App/logs/pcso_bookings_import.log
+```bash
+cd /Users/walshwill/Putnam+Life/App/putnamlife
+.venv/bin/python3 scripts/import_news.py
 ```
 
 Verify cron:
-```
-crontab -l | grep import_pcso_bookings.py
-```
-
----
-
-## 2) Clerk of Court — Traffic Citations
-Purpose: Download + UPSERT traffic citations.  
-Script: `zClerkDataUpdate/daily_traffic_citations_update.py`  
-Cron setup: `setup_daily_cron.sh`  
-Schedule: Daily at 2:00 AM  
-Log: `logs/traffic_citations_import.log`
-
-Run manually:
-```
-cd /Users/willwalsh/PutnamApp/App
-python3 zClerkDataUpdate/daily_traffic_citations_update.py
+```bash
+crontab -l | grep import_news.py
 ```
 
-View history:
-```
-tail -f /Users/willwalsh/PutnamApp/App/logs/traffic_citations_import.log
-grep "$(date +%Y-%m-%d)" /Users/willwalsh/PutnamApp/App/logs/traffic_citations_import.log
-```
+### 3) Clerk of Court — daily combined runner
+- Script: `zClerkDataUpdate/clerk_data_update_all.py` (handles traffic + criminal in one pass)
+- Cron setup: `scripts/setup_daily_cron.sh`
+- Schedule: 3:30 AM daily
+- Log: `logs/clerk_update.log`
 
-Verify cron:
-```
-crontab -l | grep daily_traffic_citations_update.py
-```
-
----
-
-## 3) Clerk of Court — Criminal Back History
-Purpose: Download + UPSERT criminal back history.  
-Script: `zClerkDataUpdate/daily_criminal_back_history_update.py`  
-Cron setup: `setup_daily_cron.sh`  
-Schedule: Daily at 3:00 AM  
-Log: `logs/criminal_back_history_import.log`
+Drop the Clerk ZIPs (`traffYR.zip`, `traffWK.zip`, `criminal_HS.zip`,
+`criminal_YR.zip`) into `zClerkDataUpdate/` per
+[DATA_UPDATE_SCHEDULE.md](DATA_UPDATE_SCHEDULE.md). The runner extracts
+ZIPs found in that folder, upserts to Supabase, and auto-deletes processed
+files. Safe to run with no files present (it logs "no files" and exits).
 
 Run manually:
-```
-cd /Users/willwalsh/PutnamApp/App
-python3 zClerkDataUpdate/daily_criminal_back_history_update.py
-```
-
-View history:
-```
-tail -f /Users/willwalsh/PutnamApp/App/logs/criminal_back_history_import.log
-grep "$(date +%Y-%m-%d)" /Users/willwalsh/PutnamApp/App/logs/criminal_back_history_import.log
+```bash
+cd /Users/walshwill/Putnam+Life/App/putnamlife/zClerkDataUpdate
+/Users/walshwill/Putnam+Life/App/putnamlife/.venv/bin/python3 clerk_data_update_all.py
 ```
 
-Verify cron:
-```
-crontab -l | grep daily_criminal_back_history_update.py
-```
+### 4) Top 100 lists refresh
+- Helper: `ingest/ppa_trim/scripts/mgmt_api_load.sh`
+- SQL: `select public.calculate_top_100_lists();`
+- Cron setup: `scripts/setup_daily_cron.sh` (installs both #3 and #4)
+- Schedule: 4:00 AM daily (after the Clerk import)
+- Log: `logs/top_100_refresh.log`
 
----
+The Postgres function is `EXECUTE`-restricted to `service_role` only;
+the helper script authenticates via the Supabase Personal Access Token
+and runs against the `postgres` superuser.
 
-## 4) Law & Order — Agency Stats
-Purpose: Recalculate agency stats and store in Supabase.  
-Script: `zAgencyStatsUpdate/calculate_agency_stats.py`  
-Cron setup: `zAgencyStatsUpdate/setup_agency_stats_cron.sh`  
-Schedule (from script): Hourly at minute 0 + @reboot catch-up  
-Wrapper: `zAgencyStatsUpdate/run_agency_stats_if_needed.sh`  
-Log: `logs/agency_stats_cron.log`
+## Not on cron in this repo
 
-Run manually:
-```
-cd /Users/willwalsh/PutnamApp/App/zAgencyStatsUpdate
-python3 calculate_agency_stats.py
-```
+### Agency Stats
+The hourly PCSO scraper (in `~/pcso-scraper/`) handles agency-stat
+recomputation as part of its run. The `agency` column on `public.charges`
+is populated inline by the scraper's parser. There is no separate
+agency-stats cron in this repo.
 
-View history:
-```
-tail -f /Users/willwalsh/PutnamApp/App/logs/agency_stats_cron.log
-grep "$(date +%Y-%m-%d)" /Users/willwalsh/PutnamApp/App/logs/agency_stats_cron.log
-```
+### FL Sex Offender Registry (`fl_sor` table)
+Updated manually each month — see the FDLE section in
+[DATA_UPDATE_SCHEDULE.md](DATA_UPDATE_SCHEDULE.md). No cron.
 
-Verify cron:
-```
-crontab -l | grep run_agency_stats_if_needed.sh
-```
-
-Note: `AGENCY_STATS_README.md` mentions 6 AM / 6 PM, but the current cron script
-installs hourly. The script is the source of truth right now.
-
----
-
-## 5) Law & Order — Offender Registry (Sex Offenders)
-App table: `fl_sor` (from `lib/config/app_config.dart`)  
-Cron/script status: No cron setup or import script found in this repo.
-
-What this means:
-- The app reads from Supabase table `fl_sor`.
-- There is no scheduled job in this repo to update it.
-
----
-
-## One-line "Check All Jobs"
-```
+## One-line "check all jobs"
+```bash
 crontab -l
+launchctl list | grep -E "(pcso|com\.putnam)"
 ```

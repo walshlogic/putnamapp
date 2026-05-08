@@ -64,9 +64,9 @@ zClerkDataUpdate/
 ### Test ZIP Extraction
 
 ```bash
-# Place a ZIP file in zClerkDataUpdate/
-cd /Users/willwalsh/PutnamApp/App
-python3 zClerkDataUpdate/daily_traffic_citations_update.py
+# Place a ZIP file in zClerkDataUpdate/, then run the combined daily runner:
+cd /Users/walshwill/Putnam+Life/App/putnamlife/zClerkDataUpdate
+/Users/walshwill/Putnam+Life/App/putnamlife/.venv/bin/python3 clerk_data_update_all.py
 ```
 
 The script will:
@@ -79,7 +79,10 @@ The script will:
 
 ```bash
 # Test extraction function directly
-python3 -c "
+cd /Users/walshwill/Putnam+Life/App/putnamlife
+.venv/bin/python3 -c "
+import sys
+sys.path.insert(0, 'scripts')
 from pathlib import Path
 from download_traffic_citations import extract_zip_file
 zip_path = Path('zClerkDataUpdate/traffYR.zip')

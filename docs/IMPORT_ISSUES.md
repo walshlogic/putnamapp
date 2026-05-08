@@ -14,7 +14,7 @@ Running log of known issues encountered during data imports (PCSO jail log, PPA 
 - **Scope of data loss:** ~30 bookings total (~3 days × avg 8–12 bookings/day) = 0.2% of historical data. Verified adjacent days (02-07, 02-09, 02-10, 02-11, 02-13, 02-15) all scrape cleanly.
 - **Workaround:** none from our side.
 - **Action:** accepted the loss per user decision 2026-04-23. Retry quarterly (PCSO may clean up their DB). If user emails PCSO records/IT with a screenshot, they may fix it faster.
-- **How to retry once fixed:** the 3 dates are already marked `ok=false` in `public.scrape_runs`. Re-run `python3 backfill_pcso_bookings.py --start-date 2025-02-08 --end-date 2025-02-14` — resume skips the 4 successful days, re-attempts the 3 failed ones.
+- **How to retry once fixed:** the 3 dates are already marked `ok=false` in `public.scrape_runs`. Re-run `python3 scripts/backfill_pcso_bookings.py --start-date 2025-02-08 --end-date 2025-02-14` — resume skips the 4 successful days, re-attempts the 3 failed ones.
 
 ## Resolved issues
 
@@ -27,15 +27,15 @@ Running log of known issues encountered during data imports (PCSO jail log, PPA 
   export SUPABASE_URL=$(grep '^SUPABASE_URL=' /Users/walshwill/pcso-scraper/.env | cut -d= -f2-)
   export SUPABASE_SERVICE_ROLE_KEY=$(grep '^SUPABASE_SERVICE_ROLE_KEY=' /Users/walshwill/pcso-scraper/.env | cut -d= -f2-)
   ```
-- **Permanent fix applied 2026-04-23:** updated `assets/.env` in place with current project credentials (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` pulled from `/Users/walshwill/pcso-scraper/.env`; preserved `PCSO_BOOKINGS_TABLE`, `PCSO_CHARGES_TABLE`, `PCSO_PHOTOS_BUCKET`). Old stale file backed up as `assets/.env.stale-<timestamp>` in case anything broke. Verified via clean-subprocess connection test. `setup_hourly_pcso_cron.sh` was never installed in crontab, so the main-repo importer had no live cron to break in the first place — but running it manually now works.
+- **Permanent fix applied 2026-04-23:** updated `assets/.env` in place with current project credentials (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` pulled from `/Users/walshwill/pcso-scraper/.env`; preserved `PCSO_BOOKINGS_TABLE`, `PCSO_CHARGES_TABLE`, `PCSO_PHOTOS_BUCKET`). Old stale file backed up as `assets/.env.stale-<timestamp>` in case anything broke. Verified via clean-subprocess connection test. `scripts/setup_hourly_pcso_cron.sh` was never installed in crontab in this repo (the live PCSO scraper runs from `~/pcso-scraper/` via launchd) — but running this repo's importer manually now works.
 - **`flutter_env.json` refreshed 2026-04-23:** pulled fresh `SUPABASE_URL` + anon key (legacy JWT, `role=anon`) via `mcp__supabase__get_project_url` + `mcp__supabase__get_publishable_keys`. Preserved `REVENUECAT_IOS_API_KEY`, `REVENUECAT_ANDROID_API_KEY`, `WEATHER_LAT`, `WEATHER_LON`. Old stale file backed up as `flutter_env.json.stale-<timestamp>`. `flutter run` in dev mode now works without needing `--dart-define`; TestFlight builds are unaffected (they override via `--dart-define` at build time regardless).
 - **`assets/.env.save` deleted 2026-04-23** — was a stale duplicate of the old `.env`. The timestamped backup `assets/.env.stale-<timestamp>` is kept as the historical record.
 
 ### [RESOLVED 2026-04-23] `public.charges` missing `agency` column
 
 - **Symptom:** `PGRST204 Could not find the 'agency' column of 'charges' in the schema cache` when the Python importer tried to write normalized agency names.
-- **Root cause:** when the Supabase project was recreated, the migration at `zAgencyStatsUpdate/agency_stats_fix_charges_agency.sql` was never re-applied to the new project. That migration adds `agency text` to `public.charges` and recreates `recent_bookings_with_charges` view to expose it.
-- **Fix applied:** executed `ALTER TABLE public.charges ADD COLUMN agency text` + recreated the view (preserving its current shape, just adding `'agency', c.agency` to the JSONB build). Also backfilled ~19K existing charges' agency values by regex on their `case_number` with PCS/PCSO/PPD/IPD/WPD/FHP/FWC normalization. Parser in `import_pcso_bookings.py` updated to extract+normalize agency at scrape time going forward.
+- **Root cause:** when the Supabase project was recreated, the migration that adds `agency text` to `public.charges` and rebuilds the `recent_bookings_with_charges` view was never re-applied to the new project. (The original SQL lived in the now-deleted `zAgencyStatsUpdate/` folder; logic is preserved in the parser instead.)
+- **Fix applied:** executed `ALTER TABLE public.charges ADD COLUMN agency text` + recreated the view (preserving its current shape, just adding `'agency', c.agency` to the JSONB build). Also backfilled ~19K existing charges' agency values by regex on their `case_number` with PCS/PCSO/PPD/IPD/WPD/FHP/FWC normalization. Parser in `scripts/import_pcso_bookings.py` updated to extract+normalize agency at scrape time going forward.
 
 ### [RESOLVED 2026-04-23] ALL filter in Jail Log errors with `PGRST205 public.booking_stats not found`
 

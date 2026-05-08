@@ -83,21 +83,23 @@ The project has had credential churn; if `assets/.env` is stale, either update i
 
 ### Common invocations
 
+Run from the repo root so `assets/.env` resolves correctly.
+
 ```bash
 # One day — dry run, no writes
-python3 backfill_pcso_bookings.py --start-date 2025-06-15 --end-date 2025-06-15 --dry-run
+python3 scripts/backfill_pcso_bookings.py --start-date 2025-06-15 --end-date 2025-06-15 --dry-run
 
 # One year, day-by-day, photos inline (default)
-python3 backfill_pcso_bookings.py --start-date 2025-01-01 --end-date 2025-12-31
+python3 scripts/backfill_pcso_bookings.py --start-date 2025-01-01 --end-date 2025-12-31
 
 # Re-run the same range — completed days are skipped via scrape_runs resume
-python3 backfill_pcso_bookings.py --start-date 2025-01-01 --end-date 2025-12-31
+python3 scripts/backfill_pcso_bookings.py --start-date 2025-01-01 --end-date 2025-12-31
 
 # Data only, skip photo fetch (do a photo-only pass later)
-python3 backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31 --no-photos
+python3 scripts/backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31 --no-photos
 
 # Leave the hourly cron running (e.g., if you're running in parallel)
-python3 backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31 --no-cron-toggle
+python3 scripts/backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31 --no-cron-toggle
 ```
 
 ### Year-by-year intended cadence
@@ -106,7 +108,7 @@ Run one year, verify counts in the dashboard / app, then run the next year. Ther
 
 ```bash
 # After 2025 completes:
-python3 backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31
+python3 scripts/backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31
 # Then 2023, 2022, 2021, 2020, 2019, …
 ```
 
@@ -122,6 +124,6 @@ python3 backfill_pcso_bookings.py --start-date 2024-01-01 --end-date 2024-12-31
 
 ## Related files
 
-- [import_pcso_bookings.py](import_pcso_bookings.py) — hourly live-page importer. Backfill imports its parser/upsert/photo functions to stay DRY.
+- [scripts/import_pcso_bookings.py](../scripts/import_pcso_bookings.py) — hourly live-page importer. Backfill imports its parser/upsert/photo functions to stay DRY.
 - [PCSO_JAIL_LOG_README.md](PCSO_JAIL_LOG_README.md) — hourly importer docs.
-- [zAgencyStatsUpdate/agency_stats_fix_charges_agency.sql](zAgencyStatsUpdate/agency_stats_fix_charges_agency.sql) — original one-shot SQL that inspired the agency normalization logic now baked into the Python parser.
+- The `agency` column on `public.charges` was added by a one-shot SQL migration that lived in the now-deleted `zAgencyStatsUpdate/` folder. The normalization logic is now baked into the Python parser ([scripts/import_pcso_bookings.py](../scripts/import_pcso_bookings.py)) and runs on every scrape.

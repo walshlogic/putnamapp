@@ -6,9 +6,9 @@ Supabase storage.
 
 ## Files
 
-- `import_pcso_bookings.py`
+- `scripts/import_pcso_bookings.py`
   - Main importer (scrapes PCSO, upserts `bookings`, syncs `charges`, uploads photos).
-- `setup_hourly_pcso_cron.sh`
+- `scripts/setup_hourly_pcso_cron.sh`
   - Installs the hourly cron job.
 - Logs
   - `logs/pcso_bookings_import.log`
@@ -32,8 +32,8 @@ Optional (defaults shown):
 ## Running manually
 
 ```
-cd /Users/willwalsh/PutnamApp/App
-python3 import_pcso_bookings.py
+cd /Users/walshwill/Putnam+Life/App/putnamlife
+python3 scripts/import_pcso_bookings.py
 ```
 
 ## Hourly cron job
@@ -41,7 +41,7 @@ python3 import_pcso_bookings.py
 Install/update the cron entry (runs hourly at :05):
 
 ```
-bash /Users/willwalsh/PutnamApp/App/setup_hourly_pcso_cron.sh
+bash /Users/walshwill/Putnam+Life/App/putnamlife/scripts/setup_hourly_pcso_cron.sh
 ```
 
 Confirm:
