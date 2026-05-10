@@ -12,9 +12,12 @@ class AppConfig {
   static const String criminalBackHistoryTable = 'criminal_back_history';
   static const String newsArticlesTable = 'news_articles';
   static const String agencyStatsTable = 'agency_stats';
+  static const String incidentsTable = 'incidents';
+  static const String incidentAttachmentsTable = 'incident_attachments';
 
   // Supabase Storage Buckets
   static const String bookingPhotosBucket = 'pcso-booking-photos';
+  static const String incidentMediaBucket = 'incident-media';
 
   // Runtime config via --dart-define (do not hardcode secrets)
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');

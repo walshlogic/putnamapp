@@ -6,9 +6,17 @@ import '../config/route_names.dart';
 import '../providers/auth_providers.dart';
 
 class PutnamAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const PutnamAppBar({super.key, this.showBackButton = false});
+  const PutnamAppBar({
+    super.key,
+    this.showBackButton = false,
+    this.extraActions,
+  });
 
   final bool showBackButton;
+
+  /// Optional screen-specific actions inserted before the standard profile +
+  /// settings icons (e.g., edit/delete on a detail screen).
+  final List<Widget>? extraActions;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -34,6 +42,7 @@ class PutnamAppBar extends ConsumerWidget implements PreferredSizeWidget {
       title: const Text('PUTNAM+LIFE'),
       centerTitle: true,
       actions: <Widget>[
+        if (extraActions != null) ...extraActions!,
         // Profile icon with premium badge
         IconButton(
           icon: Stack(

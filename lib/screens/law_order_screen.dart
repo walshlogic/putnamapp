@@ -134,6 +134,18 @@ class LawOrderScreen extends ConsumerWidget {
                       gradientEnd: appColors.accentTealDark,
                       onTap: () => context.push(RoutePaths.agencyStats),
                     ),
+
+                    // Incident Log — 5th cell, lands at row 3 col 1
+                    // (below Offender Registry per UX preference).
+                    _buildFeatureCard(
+                      context,
+                      appColors,
+                      icon: Icons.report,
+                      title: 'INCIDENT\nLOG',
+                      gradientStart: appColors.primaryPurple,
+                      gradientEnd: appColors.darkPurple,
+                      onTap: () => context.push(RoutePaths.incidentLog),
+                    ),
                   ],
                 ),
               ],

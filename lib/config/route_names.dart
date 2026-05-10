@@ -55,4 +55,9 @@ class RouteNames {
 
   // News routes
   static const String news = 'news';
+
+  // Incident Log routes
+  static const String incidentLog = 'incident-log';
+  static const String incidentDetail = 'incident-detail';
+  static const String incidentEdit = 'incident-edit';
 }

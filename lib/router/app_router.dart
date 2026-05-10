@@ -38,6 +38,9 @@ import '../models/criminal_back_history.dart';
 import '../screens/news_screen.dart';
 import '../screens/government_screen.dart';
 import '../screens/home_page.dart';
+import '../screens/incident_detail_screen.dart';
+import '../screens/incident_edit_screen.dart';
+import '../screens/incident_log_screen.dart';
 import '../screens/law_order_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/place_detail_screen.dart';
@@ -437,6 +440,28 @@ GoRouter createAppRouter(WidgetRef ref) {
         name: RouteNames.news,
         pageBuilder: (BuildContext context, GoRouterState state) =>
             const NoTransitionPage(child: NewsScreen()),
+      ),
+      GoRoute(
+        path: RoutePaths.incidentLog,
+        name: RouteNames.incidentLog,
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            const NoTransitionPage(child: IncidentLogScreen()),
+      ),
+      GoRoute(
+        path: RoutePaths.incidentDetail,
+        name: RouteNames.incidentDetail,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          final String id = state.extra! as String;
+          return NoTransitionPage(child: IncidentDetailScreen(incidentId: id));
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.incidentEdit,
+        name: RouteNames.incidentEdit,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          final String? id = state.extra as String?;
+          return NoTransitionPage(child: IncidentEditScreen(incidentId: id));
+        },
       ),
     ],
   );
