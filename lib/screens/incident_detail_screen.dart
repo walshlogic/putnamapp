@@ -11,6 +11,7 @@ import '../extensions/build_context_extensions.dart';
 import '../models/agency.dart';
 import '../models/incident.dart';
 import '../models/incident_attachment.dart';
+import '../models/incident_person.dart';
 import '../providers/incident_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_footer.dart';
@@ -127,7 +128,11 @@ class IncidentDetailScreen extends ConsumerWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to remove: $e')),
+        SnackBar(
+          content: Text('Failed to remove: $e'),
+          duration: const Duration(seconds: 12),
+          showCloseIcon: true,
+        ),
       );
     }
   }
@@ -140,13 +145,19 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final DateFormat fmt = DateFormat('EEEE, MMM d, y • h:mm a');
-    final Agency? agency = incident.agencyId == null
-        ? null
-        : Agency.all.firstWhere(
-            (Agency a) => a.id == incident.agencyId,
-            orElse: () => Agency.all.first,
-          );
+    final DateFormat fmt = DateFormat('EEEE, MMM d, y');
+
+    // Resolve agency objects from ids; skip any unknown ids.
+    final List<Agency> agencies = incident.agencyIds
+        .map((String id) {
+          try {
+            return Agency.all.firstWhere((Agency a) => a.id == id);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<Agency>()
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -177,7 +188,7 @@ class _Body extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      fmt.format(incident.occurredAt.toLocal()),
+                      fmt.format(incident.occurredAt),
                       style: TextStyle(
                           color: appColors.white.withValues(alpha: 0.95),
                           fontSize: 13),
@@ -213,17 +224,12 @@ class _Body extends StatelessWidget {
                 avatar: const Icon(Icons.local_offer, size: 16),
                 label: Text(IncidentCategory.label(incident.category!)),
               ),
-            if (agency != null)
-              Chip(
-                avatar: Icon(agency.icon, size: 16),
-                label: Text(agency.shortName),
+            ...agencies.map(
+              (Agency a) => Chip(
+                avatar: Icon(a.icon, size: 16),
+                label: Text(a.shortName),
               ),
-            if (incident.relatedBookingNo != null &&
-                incident.relatedBookingNo!.isNotEmpty)
-              Chip(
-                avatar: const Icon(Icons.gavel, size: 16),
-                label: Text('Booking ${incident.relatedBookingNo}'),
-              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -236,6 +242,29 @@ class _Body extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(incident.description, style: const TextStyle(height: 1.4)),
+
+        if (incident.persons.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 24),
+          const Text(
+            'PERSONS TAGGED',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6),
+          ),
+          const SizedBox(height: 8),
+          for (final IncidentPerson p in incident.persons)
+            Card(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: ListTile(
+                dense: true,
+                leading: const Icon(Icons.person_outline),
+                title: Text(p.displayName),
+                subtitle: _personIds(p),
+              ),
+            ),
+        ],
+
         if (incident.attachments.isNotEmpty) ...<Widget>[
           const SizedBox(height: 24),
           const Text(
@@ -254,6 +283,18 @@ class _Body extends StatelessWidget {
       ],
     );
   }
+
+  Widget? _personIds(IncidentPerson p) {
+    final List<String> parts = <String>[];
+    if (p.bookingNo != null && p.bookingNo!.isNotEmpty) {
+      parts.add('Booking ${p.bookingNo}');
+    }
+    if (p.mniNo != null && p.mniNo!.isNotEmpty) {
+      parts.add('MNI ${p.mniNo}');
+    }
+    if (parts.isEmpty) return null;
+    return Text(parts.join(' • '), style: const TextStyle(fontSize: 11));
+  }
 }
 
 class _AttachmentTile extends StatelessWidget {
@@ -263,32 +304,45 @@ class _AttachmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inline video player for uploaded video files
     if (att.kind == IncidentAttachmentKind.file && att.isVideo) {
-      return _VideoPlayer(att: att);
-    }
-    if (att.kind == IncidentAttachmentKind.file && att.isImage) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(att.url, fit: BoxFit.cover),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (att.title != null && att.title!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _titleRow(att),
+            ),
+          _VideoPlayer(att: att),
+        ],
       );
     }
-    // Default: external link / PDF / unknown — render as tappable card.
+    // Inline image for image files
+    if (att.kind == IncidentAttachmentKind.file && att.isImage) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (att.title != null && att.title!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _titleRow(att),
+            ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(att.url, fit: BoxFit.cover),
+          ),
+        ],
+      );
+    }
+    // Default: tappable card (URLs, PDFs, audio files, etc.)
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        leading: Icon(
-          att.isPdf
-              ? Icons.picture_as_pdf
-              : att.kind == IncidentAttachmentKind.url
-                  ? Icons.link
-                  : Icons.attach_file,
-          color: appColors.primaryPurple,
-        ),
-        title: Text(
-          att.title?.isNotEmpty == true ? att.title! : _domainOf(att.url),
-        ),
-        subtitle: Text(att.url,
-            maxLines: 1, overflow: TextOverflow.ellipsis),
+        leading: Icon(_iconFor(att), color: appColors.primaryPurple),
+        title: Text(att.displayLabel),
+        subtitle: Text(IncidentDisplayType.label(att.displayType),
+            style: const TextStyle(fontSize: 11)),
         trailing: const Icon(Icons.open_in_new, size: 18),
         onTap: () async {
           final Uri uri = Uri.parse(att.url);
@@ -300,13 +354,42 @@ class _AttachmentTile extends StatelessWidget {
     );
   }
 
-  String _domainOf(String url) {
-    try {
-      return Uri.parse(url).host.isNotEmpty
-          ? Uri.parse(url).host
-          : url;
-    } catch (_) {
-      return url;
+  Widget _titleRow(IncidentAttachment a) {
+    return Row(
+      children: <Widget>[
+        Icon(_iconFor(a), size: 16, color: Colors.grey.shade700),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            a.title!,
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _iconFor(IncidentAttachment a) {
+    switch (a.displayType) {
+      case IncidentDisplayType.video:
+        return Icons.movie;
+      case IncidentDisplayType.audio:
+        return Icons.audiotrack;
+      case IncidentDisplayType.image:
+        return Icons.image;
+      case IncidentDisplayType.document:
+        return a.isPdf ? Icons.picture_as_pdf : Icons.description;
+      case IncidentDisplayType.news:
+        return Icons.article;
+      case IncidentDisplayType.social:
+        return Icons.public;
+      default:
+        return a.kind == IncidentAttachmentKind.url
+            ? Icons.link
+            : Icons.attach_file;
     }
   }
 }
@@ -346,7 +429,8 @@ class _VideoPlayerState extends State<_VideoPlayer> {
           videoPlayerController: v,
           autoPlay: false,
           looping: false,
-          aspectRatio: v.value.aspectRatio == 0 ? 16 / 9 : v.value.aspectRatio,
+          aspectRatio:
+              v.value.aspectRatio == 0 ? 16 / 9 : v.value.aspectRatio,
         );
       });
     } catch (e) {
@@ -373,7 +457,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
         margin: EdgeInsets.zero,
         child: ListTile(
           leading: const Icon(Icons.error_outline, color: Colors.red),
-          title: Text(widget.att.title ?? 'Video'),
+          title: Text(widget.att.displayLabel),
           subtitle: Text('Failed to load video.\n$_error',
               maxLines: 2, overflow: TextOverflow.ellipsis),
         ),

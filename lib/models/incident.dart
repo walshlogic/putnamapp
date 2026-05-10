@@ -1,4 +1,7 @@
+import 'package:intl/intl.dart';
+
 import 'incident_attachment.dart';
+import 'incident_person.dart';
 
 /// A public-safety event logged by an admin/elevated user.
 class Incident {
@@ -11,41 +14,59 @@ class Incident {
     this.latitude,
     this.longitude,
     this.category,
-    this.agencyId,
-    this.relatedBookingNo,
+    this.agencyIds = const <String>[],
     this.isActive = true,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
     this.attachments = const <IncidentAttachment>[],
+    this.persons = const <IncidentPerson>[],
   });
 
   final String id;
   final String title;
   final String description;
+
+  /// Date-only — no time component. Stored as `date` in Postgres.
   final DateTime occurredAt;
+
   final String locationText;
   final double? latitude;
   final double? longitude;
   final String? category;
-  final String? agencyId;
-  final String? relatedBookingNo;
+
+  /// Zero or more agency ids ('pcso', 'palatka_pd', etc.). Stored as text[].
+  final List<String> agencyIds;
+
   final bool isActive;
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  /// Populated when the repository joins the attachments relation. Empty
-  /// when only listing incidents; loaded when fetching one by id.
+  /// Populated when the repository joins the attachments relation.
   final List<IncidentAttachment> attachments;
+
+  /// Populated when the repository joins incident_persons.
+  final List<IncidentPerson> persons;
 
   factory Incident.fromJson(Map<String, dynamic> json) {
     final List<IncidentAttachment> atts = json['incident_attachments'] != null
         ? (json['incident_attachments'] as List<dynamic>)
-              .map((dynamic a) =>
-                  IncidentAttachment.fromJson(a as Map<String, dynamic>))
-              .toList()
+            .map((dynamic a) =>
+                IncidentAttachment.fromJson(a as Map<String, dynamic>))
+            .toList()
         : <IncidentAttachment>[];
+
+    final List<IncidentPerson> ppl = json['incident_persons'] != null
+        ? (json['incident_persons'] as List<dynamic>)
+            .map((dynamic p) =>
+                IncidentPerson.fromJson(p as Map<String, dynamic>))
+            .toList()
+        : <IncidentPerson>[];
+
+    final List<String> agencies = json['agency_ids'] != null
+        ? List<String>.from(json['agency_ids'] as List<dynamic>)
+        : <String>[];
 
     return Incident(
       id: json['id'] as String,
@@ -56,8 +77,7 @@ class Incident {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       category: json['category'] as String?,
-      agencyId: json['agency_id'] as String?,
-      relatedBookingNo: json['related_booking_no'] as String?,
+      agencyIds: agencies,
       isActive: json['is_active'] as bool? ?? true,
       createdBy: json['created_by'] as String?,
       createdAt: json['created_at'] != null
@@ -67,21 +87,24 @@ class Incident {
           ? DateTime.parse(json['updated_at'] as String)
           : null,
       attachments: atts..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+      persons: ppl..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
     );
   }
 
-  /// Map for INSERT/UPDATE. id/created_at/updated_at are server-managed.
+  /// Map for INSERT/UPDATE on `public.incidents` itself. Persons + attachments
+  /// are written separately via their own tables.
+  /// `occurred_at` is sent as 'yyyy-MM-dd' so the Postgres `date` column gets
+  /// the user-picked calendar day, not a timezone-shifted day.
   Map<String, dynamic> toJsonForWrite({required String createdByUid}) {
     return <String, dynamic>{
       'title': title,
       'description': description,
-      'occurred_at': occurredAt.toUtc().toIso8601String(),
+      'occurred_at': DateFormat('yyyy-MM-dd').format(occurredAt),
       'location_text': locationText,
       'latitude': latitude,
       'longitude': longitude,
       'category': category,
-      'agency_id': agencyId,
-      'related_booking_no': relatedBookingNo,
+      'agency_ids': agencyIds,
       'is_active': isActive,
       'created_by': createdByUid,
     };
@@ -96,13 +119,13 @@ class Incident {
     double? latitude,
     double? longitude,
     String? category,
-    String? agencyId,
-    String? relatedBookingNo,
+    List<String>? agencyIds,
     bool? isActive,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<IncidentAttachment>? attachments,
+    List<IncidentPerson>? persons,
   }) {
     return Incident(
       id: id ?? this.id,
@@ -113,20 +136,19 @@ class Incident {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       category: category ?? this.category,
-      agencyId: agencyId ?? this.agencyId,
-      relatedBookingNo: relatedBookingNo ?? this.relatedBookingNo,
+      agencyIds: agencyIds ?? this.agencyIds,
       isActive: isActive ?? this.isActive,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       attachments: attachments ?? this.attachments,
+      persons: persons ?? this.persons,
     );
   }
 }
 
 /// Common incident categories. Free-form text in the DB; this list is just
-/// what the UI offers as quick picks. Adding a new value here doesn't need
-/// any DB migration.
+/// what the UI offers as quick picks.
 class IncidentCategory {
   IncidentCategory._();
 

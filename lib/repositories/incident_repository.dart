@@ -9,6 +9,7 @@ import '../config/app_config.dart';
 import '../exceptions/app_exceptions.dart' hide StorageException;
 import '../models/incident.dart';
 import '../models/incident_attachment.dart';
+import '../models/incident_person.dart';
 
 class IncidentRepository {
   IncidentRepository(this._client);
@@ -31,10 +32,10 @@ class IncidentRepository {
         query = query.eq('category', category);
       }
       if (from != null) {
-        query = query.gte('occurred_at', from.toUtc().toIso8601String());
+        query = query.gte('occurred_at', _yyyymmdd(from));
       }
       if (to != null) {
-        query = query.lte('occurred_at', to.toUtc().toIso8601String());
+        query = query.lte('occurred_at', _yyyymmdd(to));
       }
       if (search != null && search.trim().isNotEmpty) {
         final String pattern = '%${search.trim()}%';
@@ -60,7 +61,7 @@ class IncidentRepository {
     try {
       final Map<String, dynamic> row = await _client
           .from(AppConfig.incidentsTable)
-          .select('*, incident_attachments(*)')
+          .select('*, incident_attachments(*), incident_persons(*)')
           .eq('id', id)
           .single();
       return Incident.fromJson(row);
@@ -104,7 +105,8 @@ class IncidentRepository {
     try {
       await _client
           .from(AppConfig.incidentsTable)
-          .update(incident.toJsonForWrite(createdByUid: incident.createdBy ?? uid))
+          .update(
+              incident.toJsonForWrite(createdByUid: incident.createdBy ?? uid))
           .eq('id', incident.id);
     } catch (e) {
       if (e is PostgrestException) {
@@ -114,8 +116,7 @@ class IncidentRepository {
     }
   }
 
-  /// Soft delete: flip is_active to false. Hard delete still possible via
-  /// admin dashboard if you want the row gone.
+  /// Soft delete: flip is_active to false.
   Future<void> deactivateIncident(String id) async {
     try {
       await _client
@@ -130,10 +131,65 @@ class IncidentRepository {
     }
   }
 
+  // ============================================================
+  // Persons
+  // ============================================================
+  Future<IncidentPerson> addPerson({
+    required String incidentId,
+    String? bookingNo,
+    String? mniNo,
+    String? label,
+    int sortOrder = 0,
+  }) async {
+    final Map<String, dynamic> body = <String, dynamic>{
+      'incident_id': incidentId,
+      'booking_no':
+          (bookingNo != null && bookingNo.trim().isNotEmpty) ? bookingNo.trim() : null,
+      'mni_no':
+          (mniNo != null && mniNo.trim().isNotEmpty) ? mniNo.trim() : null,
+      'label': (label != null && label.trim().isNotEmpty) ? label.trim() : null,
+      'sort_order': sortOrder,
+    };
+    if (body['booking_no'] == null &&
+        body['mni_no'] == null &&
+        body['label'] == null) {
+      throw const DatabaseException(
+          'A person must have a booking #, MNI #, or label.');
+    }
+    try {
+      final Map<String, dynamic> row = await _client
+          .from('incident_persons')
+          .insert(body)
+          .select()
+          .single();
+      return IncidentPerson.fromJson(row);
+    } catch (e) {
+      if (e is PostgrestException) {
+        throw DatabaseException('Failed to add person', e);
+      }
+      throw DatabaseException('Failed to add person: $e');
+    }
+  }
+
+  Future<void> deletePerson(String personId) async {
+    try {
+      await _client.from('incident_persons').delete().eq('id', personId);
+    } catch (e) {
+      if (e is PostgrestException) {
+        throw DatabaseException('Failed to remove person', e);
+      }
+      throw DatabaseException('Failed to remove person: $e');
+    }
+  }
+
+  // ============================================================
+  // Attachments
+  // ============================================================
   Future<IncidentAttachment> addUrlAttachment({
     required String incidentId,
     required String url,
-    String? title,
+    required String title,
+    required String displayType,
     int sortOrder = 0,
   }) async {
     try {
@@ -144,6 +200,7 @@ class IncidentRepository {
             'kind': 'url',
             'url': url,
             'title': title,
+            'display_type': displayType,
             'sort_order': sortOrder,
           })
           .select()
@@ -164,7 +221,8 @@ class IncidentRepository {
     required Uint8List bytes,
     required String filename,
     required String mimeType,
-    String? title,
+    required String title,
+    required String displayType,
     int sortOrder = 0,
   }) async {
     final String bucketPath =
@@ -191,6 +249,7 @@ class IncidentRepository {
             'mime_type': mimeType,
             'file_size': bytes.lengthInBytes,
             'title': title,
+            'display_type': displayType,
             'sort_order': sortOrder,
           })
           .select()
@@ -212,7 +271,8 @@ class IncidentRepository {
     required String incidentId,
     required String filePath,
     required String mimeType,
-    String? title,
+    required String title,
+    required String displayType,
     int sortOrder = 0,
   }) async {
     final File f = File(filePath);
@@ -224,8 +284,35 @@ class IncidentRepository {
       filename: filename,
       mimeType: mimeType,
       title: title,
+      displayType: displayType,
       sortOrder: sortOrder,
     );
+  }
+
+  /// Edit an existing attachment's user-facing fields (title + display_type).
+  /// The URL / bucket_path / mime_type are immutable.
+  Future<IncidentAttachment> updateAttachmentMeta({
+    required String attachmentId,
+    required String title,
+    required String displayType,
+  }) async {
+    try {
+      final Map<String, dynamic> row = await _client
+          .from(AppConfig.incidentAttachmentsTable)
+          .update(<String, dynamic>{
+            'title': title,
+            'display_type': displayType,
+          })
+          .eq('id', attachmentId)
+          .select()
+          .single();
+      return IncidentAttachment.fromJson(row);
+    } catch (e) {
+      if (e is PostgrestException) {
+        throw DatabaseException('Failed to update attachment', e);
+      }
+      throw DatabaseException('Failed to update attachment: $e');
+    }
   }
 
   Future<void> deleteAttachment(IncidentAttachment att) async {
@@ -257,12 +344,15 @@ class IncidentRepository {
   Future<bool> currentUserCanEdit() async {
     if (_client.auth.currentUser == null) return false;
     try {
-      final dynamic result =
-          await _client.rpc('is_elevated_or_admin');
+      final dynamic result = await _client.rpc('is_elevated_or_admin');
       return result == true;
     } catch (e) {
       debugPrint('[Incidents] is_elevated_or_admin RPC failed: $e');
       return false;
     }
   }
+}
+
+String _yyyymmdd(DateTime d) {
+  return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }

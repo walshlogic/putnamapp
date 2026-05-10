@@ -265,7 +265,7 @@ class _IncidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final DateFormat fmt = DateFormat.yMMMd().add_jm();
+    final DateFormat fmt = DateFormat.yMMMd();
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -299,7 +299,7 @@ class _IncidentCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  fmt.format(incident.occurredAt.toLocal()),
+                  fmt.format(incident.occurredAt),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade700,
