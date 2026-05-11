@@ -44,18 +44,25 @@ from dotenv import load_dotenv
 from supabase import Client, create_client
 
 script_dir = Path(__file__).parent
-env_path = script_dir / 'assets' / '.env'
-if env_path.exists():
-    load_dotenv(env_path)
+# Repo layout: this script lives in scripts/, env + logs live at the repo root.
+# Try <repo>/assets/.env first, then next-to-script (older layout), then default.
+repo_dir = script_dir.parent
+env_path_repo = repo_dir / 'assets' / '.env'
+env_path_local = script_dir / 'assets' / '.env'
+if env_path_repo.exists():
+    load_dotenv(env_path_repo)
+elif env_path_local.exists():
+    load_dotenv(env_path_local)
 else:
     load_dotenv()
 
-(script_dir / 'logs').mkdir(exist_ok=True)
+log_dir = repo_dir / 'logs'
+log_dir.mkdir(exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(script_dir / 'logs' / 'news_import.log'),
+        logging.FileHandler(log_dir / 'news_import.log'),
         logging.StreamHandler(sys.stdout),
     ],
 )
