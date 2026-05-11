@@ -29,9 +29,15 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 script_dir = Path(__file__).parent
-env_path = script_dir / 'assets' / '.env'
-if env_path.exists():
-    load_dotenv(env_path)
+# Repo layout: script lives in scripts/, env file lives at <repo>/assets/.env.
+# Try repo-root first, fall back to next-to-script for the older layout.
+repo_dir = script_dir.parent
+env_path_repo = repo_dir / 'assets' / '.env'
+env_path_local = script_dir / 'assets' / '.env'
+if env_path_repo.exists():
+    load_dotenv(env_path_repo)
+elif env_path_local.exists():
+    load_dotenv(env_path_local)
 else:
     load_dotenv()
 
