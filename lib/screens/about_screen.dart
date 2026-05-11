@@ -109,7 +109,12 @@ class AboutScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Putnam+Life provides easy access to important local information for Putnam County, Florida residents and visitors.',
+                          "Putnam+Life is my personal coding project — a place to learn "
+                          "Flutter and Supabase by pulling together public information for "
+                          "Putnam County, Florida. It isn't a public app and isn't meant "
+                          "to be one. Most of what it shows comes from public records, and "
+                          "any of it can be wrong, incomplete, or out of date — please "
+                          "don't rely on it for anything that matters.",
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(height: 1.6),
