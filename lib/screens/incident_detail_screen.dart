@@ -344,12 +344,59 @@ class _AttachmentTile extends StatelessWidget {
         subtitle: Text(IncidentDisplayType.label(att.displayType),
             style: const TextStyle(fontSize: 11)),
         trailing: const Icon(Icons.open_in_new, size: 18),
-        onTap: () async {
-          final Uri uri = Uri.parse(att.url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        },
+        onTap: () => _openExternal(context, att.url),
+      ),
+    );
+  }
+
+  /// Launch the URL externally with explicit failure handling. Auto-prefixes
+  /// https:// if the stored URL has no scheme (covers older rows that were
+  /// added before URL normalization). On failure, surfaces the reason via
+  /// SnackBar instead of silently doing nothing — which is how this method
+  /// used to behave when the URL was unlaunchable.
+  Future<void> _openExternal(BuildContext context, String rawUrl) async {
+    String urlString = rawUrl.trim();
+    if (urlString.isEmpty) {
+      _snackError(context, 'This attachment has no URL.');
+      return;
+    }
+    if (!urlString.startsWith('http://') &&
+        !urlString.startsWith('https://')) {
+      urlString = 'https://$urlString';
+    }
+    Uri? uri;
+    try {
+      uri = Uri.parse(urlString);
+    } catch (_) {
+      _snackError(context, 'This URL is malformed:\n$urlString');
+      return;
+    }
+    if (uri.host.isEmpty) {
+      _snackError(
+          context,
+          'This URL has no domain (looks like text, not a link):\n$urlString');
+      return;
+    }
+    try {
+      final bool launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        _snackError(context, 'Could not open this link:\n$urlString');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        _snackError(context, 'Failed to open link: $e');
+      }
+    }
+  }
+
+  void _snackError(BuildContext context, String msg) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 8),
+        showCloseIcon: true,
       ),
     );
   }

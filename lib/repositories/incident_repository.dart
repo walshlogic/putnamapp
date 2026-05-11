@@ -289,20 +289,25 @@ class IncidentRepository {
     );
   }
 
-  /// Edit an existing attachment's user-facing fields (title + display_type).
-  /// The URL / bucket_path / mime_type are immutable.
+  /// Edit an existing attachment's user-facing fields. Title and display_type
+  /// are always updated; the URL is updated only when [url] is provided
+  /// (and only makes sense for kind='url' attachments — file URLs point at
+  /// the immutable bucket path).
   Future<IncidentAttachment> updateAttachmentMeta({
     required String attachmentId,
     required String title,
     required String displayType,
+    String? url,
   }) async {
+    final Map<String, dynamic> patch = <String, dynamic>{
+      'title': title,
+      'display_type': displayType,
+    };
+    if (url != null) patch['url'] = url;
     try {
       final Map<String, dynamic> row = await _client
           .from(AppConfig.incidentAttachmentsTable)
-          .update(<String, dynamic>{
-            'title': title,
-            'display_type': displayType,
-          })
+          .update(patch)
           .eq('id', attachmentId)
           .select()
           .single();

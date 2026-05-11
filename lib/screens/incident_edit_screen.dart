@@ -679,7 +679,7 @@ class _AttachmentsEditorState extends ConsumerState<_AttachmentsEditor> {
     try {
       await ref.read(incidentRepositoryProvider).addUrlAttachment(
             incidentId: widget.incident.id,
-            url: urlCtrl.text.trim(),
+            url: _normalizeUrl(urlCtrl.text.trim()),
             title: titleCtrl.text.trim(),
             displayType: type,
             sortOrder: widget.incident.attachments.length,
@@ -688,6 +688,14 @@ class _AttachmentsEditorState extends ConsumerState<_AttachmentsEditor> {
     } catch (e) {
       widget.snack('Failed: $e');
     }
+  }
+
+  /// Prepend https:// if the user-typed URL has no scheme. Doesn't try to
+  /// validate the rest — Uri.parse + tap-to-open surface bad URLs at use time.
+  String _normalizeUrl(String input) {
+    final String s = input.trim();
+    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    return 'https://$s';
   }
 
   Future<void> _addFile() async {
@@ -824,7 +832,11 @@ class _AttachmentsEditorState extends ConsumerState<_AttachmentsEditor> {
   Future<void> _editMeta(IncidentAttachment att) async {
     final TextEditingController titleCtrl =
         TextEditingController(text: att.title ?? '');
+    final TextEditingController urlCtrl =
+        TextEditingController(text: att.url);
+    final bool isUrlKind = att.kind == IncidentAttachmentKind.url;
     String type = att.displayType;
+
     final bool? ok = await showDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => StatefulBuilder(
@@ -839,21 +851,26 @@ class _AttachmentsEditorState extends ConsumerState<_AttachmentsEditor> {
                 if (att.bucketPath != null)
                   Text('File: ${att.bucketPath!.split('/').last}',
                       style:
-                          const TextStyle(fontSize: 11, color: Colors.grey))
-                else
-                  Text(att.url,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
                           const TextStyle(fontSize: 11, color: Colors.grey)),
-                const SizedBox(height: 8),
+                if (isUrlKind) ...<Widget>[
+                  TextField(
+                    controller: urlCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'URL (required)',
+                      hintText: 'https://…',
+                    ),
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 TextField(
                   controller: titleCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Title (required)',
                   ),
                   textCapitalization: TextCapitalization.words,
-                  autofocus: true,
+                  autofocus: !isUrlKind,
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
@@ -889,11 +906,21 @@ class _AttachmentsEditorState extends ConsumerState<_AttachmentsEditor> {
       widget.snack('Title cannot be empty.');
       return;
     }
+    String? normalizedUrl;
+    if (isUrlKind) {
+      final String raw = urlCtrl.text.trim();
+      if (raw.isEmpty) {
+        widget.snack('URL cannot be empty.');
+        return;
+      }
+      normalizedUrl = _normalizeUrl(raw);
+    }
     try {
       await ref.read(incidentRepositoryProvider).updateAttachmentMeta(
             attachmentId: att.id,
             title: titleCtrl.text.trim(),
             displayType: type,
+            url: normalizedUrl,
           );
       await widget.onChanged();
     } catch (e) {
