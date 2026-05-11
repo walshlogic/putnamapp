@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/route_paths.dart';
 import '../extensions/build_context_extensions.dart';
 import '../models/place.dart';
 import '../models/review.dart';
@@ -38,9 +36,7 @@ class PlaceDetailScreen extends ConsumerWidget {
         children: <Widget>[
           Expanded(
             child: profileAsync.when(
-              data: (profile) {
-                final userTier = profile?.subscriptionTier ?? 'free';
-
+              data: (_) {
                 return ListView(
                   children: <Widget>[
                     // Cover Photo or Gradient Header
@@ -183,11 +179,10 @@ class PlaceDetailScreen extends ConsumerWidget {
                           Divider(color: appColors.divider),
                           const SizedBox(height: 20),
 
-                          // Reviews Section with Tier Gates
+                          // Reviews Section
                           _buildReviewsSection(
                             context,
                             appColors,
-                            userTier,
                             reviewsAsync,
                           ),
                         ],
@@ -341,7 +336,6 @@ class PlaceDetailScreen extends ConsumerWidget {
   Widget _buildReviewsSection(
     BuildContext context,
     dynamic appColors,
-    String userTier,
     AsyncValue<List<Review>> reviewsAsync,
   ) {
     return Column(
@@ -372,66 +366,33 @@ class PlaceDetailScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
-        // Tier-based Review Display
-        if (userTier == 'free')
-          _buildFreeTierReviewLock(context, appColors, place.reviewCount)
-        else if (userTier == 'silver')
-          Column(
-            children: <Widget>[
-              // Show reviews for silver users
-              reviewsAsync.when(
-                data: (List<Review> reviews) {
-                  if (reviews.isEmpty) {
-                    return _buildNoReviews(context, appColors);
-                  }
-                  return Column(
-                    children: reviews.map((review) {
-                      return _buildReviewCard(context, appColors, review);
-                    }).toList(),
-                  );
-                },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
+        // Reviews — available to everyone (no tier gating in this build).
+        Column(
+          children: <Widget>[
+            reviewsAsync.when(
+              data: (List<Review> reviews) {
+                if (reviews.isEmpty) {
+                  return _buildNoReviews(context, appColors);
+                }
+                return Column(
+                  children: reviews
+                      .map((review) =>
+                          _buildReviewCard(context, appColors, review))
+                      .toList(),
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
                 ),
-                error: (error, stack) => _buildNoReviews(context, appColors),
               ),
-              const SizedBox(height: 16),
-              // Silver users can't write - show upgrade prompt
-              _buildSilverTierWriteLock(context, appColors),
-            ],
-          )
-        else
-          // Gold users get full access
-          Column(
-            children: <Widget>[
-              // Show reviews
-              reviewsAsync.when(
-                data: (List<Review> reviews) {
-                  if (reviews.isEmpty) {
-                    return _buildNoReviews(context, appColors);
-                  }
-                  return Column(
-                    children: reviews.map((review) {
-                      return _buildReviewCard(context, appColors, review);
-                    }).toList(),
-                  );
-                },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                error: (error, stack) => _buildNoReviews(context, appColors),
-              ),
-              const SizedBox(height: 16),
-              // Gold users can write reviews
-              _buildWriteReviewButton(context, appColors),
-            ],
-          ),
+              error: (error, stack) => _buildNoReviews(context, appColors),
+            ),
+            const SizedBox(height: 16),
+            _buildWriteReviewButton(context, appColors),
+          ],
+        ),
       ],
     );
   }
@@ -514,128 +475,6 @@ class PlaceDetailScreen extends ConsumerWidget {
     );
   }
 
-  // FREE TIER: Lock reviews, show upgrade prompt
-  Widget _buildFreeTierReviewLock(
-    BuildContext context,
-    dynamic appColors,
-    int reviewCount,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[
-            appColors.lightPurple.withValues(alpha: 0.3),
-            appColors.accentTeal.withValues(alpha: 0.2),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: appColors.primaryPurple.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        children: <Widget>[
-          Icon(Icons.lock_outline, size: 48, color: appColors.primaryPurple),
-          const SizedBox(height: 16),
-          Text(
-            '🔒 ${reviewCount > 0 ? "$reviewCount people reviewed this place" : "Reviews Locked"}',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: appColors.textDark,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'See what your neighbors are saying about this place',
-            style: TextStyle(fontSize: 14, color: appColors.textMedium),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => context.push(RoutePaths.tierSelection),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: appColors.primaryPurple,
-                foregroundColor: appColors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Upgrade to Silver to Read Reviews',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // SILVER TIER: Can read, but can't write
-  Widget _buildSilverTierWriteLock(BuildContext context, dynamic appColors) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[Colors.amber.shade50, Colors.orange.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade200),
-      ),
-      child: Column(
-        children: <Widget>[
-          Icon(Icons.edit_note, size: 40, color: Colors.amber.shade700),
-          const SizedBox(height: 12),
-          Text(
-            '✍️ Want to share your experience?',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: appColors.textDark,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Upgrade to Gold to write reviews and upload photos',
-            style: TextStyle(fontSize: 13, color: appColors.textMedium),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => context.push(RoutePaths.tierSelection),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Upgrade to Gold - Write Reviews',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // GOLD TIER: Write review button
   Widget _buildWriteReviewButton(BuildContext context, dynamic appColors) {
     return SizedBox(
       width: double.infinity,

@@ -277,11 +277,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  void _handleUpgradeToPremium() {
-    // Navigate to tier selection screen
-    context.pushNamed(RouteNames.tierSelection);
-  }
-
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentUserProfileProvider);
@@ -476,145 +471,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
 
-                // Subscription section
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            Text(
-                              profile.tierBadge,
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'SUBSCRIPTION',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Current tier display
-                        Row(
-                          children: <Widget>[
-                            Text(
-                              profile.tierDisplayName,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: profile.isFree
-                                    ? Colors.grey
-                                    : profile.isGold
-                                    ? Colors.amber.shade700
-                                    : Colors.blue.shade700,
-                              ),
-                            ),
-                            if (!profile.isFree) ...<Widget>[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.green.shade300,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'ACTIVE',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Benefits based on tier
-                        if (profile.isGold) ...<Widget>[
-                          const Text(
-                            '✓ NO ads',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          const Text(
-                            '✓ All features unlocked',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          const Text(
-                            '✓ Premium support',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          if (profile.premiumExpiresAt != null) ...<Widget>[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Renews: ${_formatDate(profile.premiumExpiresAt!)}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ] else if (profile.isSilver) ...<Widget>[
-                          const Text(
-                            '✓ Reduced ads',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          const Text(
-                            '✓ More features',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Upgrade to Gold for just \$2 more to remove ALL ads!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.amber.shade700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: _handleUpgradeToPremium,
-                            icon: const Icon(Icons.upgrade),
-                            label: const Text('Upgrade to Gold'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber,
-                              foregroundColor: Colors.black,
-                            ),
-                          ),
-                        ] else ...<Widget>[
-                          const Text(
-                            'Upgrade to Enjoy Premium Features',
-                            style: TextStyle(fontSize: 12, color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _handleUpgradeToPremium,
-                            icon: const Icon(Icons.star),
-                            label: const Text('View Plans'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // (Subscription / "Pro" section removed — this is a personal
+                // test build, not a commercial app. RevenueCat plumbing still
+                // exists in the codebase but no upgrade UI is shown.)
 
                 Card(
                   child: Padding(

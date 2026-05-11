@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/route_names.dart';
-import '../providers/auth_providers.dart';
 
 class PutnamAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const PutnamAppBar({
@@ -23,8 +22,6 @@ class PutnamAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isPremium = ref.watch(isPremiumUserProvider);
-    
     return AppBar(
       // backgroundColor and foregroundColor now come from AppBarTheme in app_theme.dart
       elevation: 0,
@@ -43,31 +40,8 @@ class PutnamAppBar extends ConsumerWidget implements PreferredSizeWidget {
       centerTitle: true,
       actions: <Widget>[
         if (extraActions != null) ...extraActions!,
-        // Profile icon with premium badge
         IconButton(
-          icon: Stack(
-            clipBehavior: Clip.none,
-            children: <Widget>[
-              const Icon(Icons.person),
-              if (isPremium)
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.amber,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.star,
-                      size: 10,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          icon: const Icon(Icons.person),
           onPressed: () => context.pushNamed(RouteNames.profile),
         ),
         Builder(

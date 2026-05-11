@@ -22,11 +22,61 @@ import '../widgets/cards/weather_card.dart';
 import '../widgets/putnam_app_bar.dart';
 import '../widgets/settings_drawer.dart';
 
-class HomePage extends ConsumerWidget {
+/// Shown once per app launch — reset to false only when the process restarts.
+bool _projectDisclaimerShownThisSession = false;
+
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Show the "personal project" notice the first time the home screen
+    // appears after launch. Not on every navigation back to home.
+    if (!_projectDisclaimerShownThisSession) {
+      _projectDisclaimerShownThisSession = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showProjectDisclaimer(context);
+      });
+    }
+  }
+
+  Future<void> _showProjectDisclaimer(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Heads up'),
+        content: const SingleChildScrollView(
+          child: Text(
+            "This is my personal coding project. I built it to learn Flutter, "
+            "Supabase, and a bunch of other tools — it isn't made for public use "
+            "and there's no plan to release it beyond this small group of testers.\n\n"
+            "The information it shows (jail logs, court records, agency stats, "
+            "incidents, etc.) comes from public sources, but it may be wrong, "
+            "incomplete, or out of date. Please don't rely on any of it for "
+            "anything that matters.\n\n"
+            "Thanks for helping me test it.",
+            style: TextStyle(height: 1.4),
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final weather = ref.watch(weatherProvider);
     final bookings = ref.watch(recentBookingsProvider);
     final hasNewBookings = ref.watch(hasNewBookingsProvider);

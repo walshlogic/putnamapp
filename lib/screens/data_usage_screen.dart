@@ -32,60 +32,44 @@ class DataUsageScreen extends ConsumerWidget {
                         color: appColors.lightPurple,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
-                        Icons.data_usage_outlined,
-                        color: appColors.primaryPurple,
-                        size: 24,
-                      ),
+                      child: Icon(Icons.data_usage_outlined,
+                          color: appColors.primaryPurple, size: 24),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'DATA USAGE',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                _buildSection(
-                  context,
-                  appColors,
-                  'SUMMARY',
-                  'Putnam+Life uses data to provide app features, improve performance, '
-                      'and support account-related services. We do not sell personal '
-                      'information.',
-                ),
-                _buildSection(
-                  context,
-                  appColors,
-                  'WHAT WE COLLECT',
-                  '• Account data you provide when creating an account\n'
-                      '• App usage events (features accessed, screens viewed)\n'
-                      '• Device and connectivity metadata (for reliability and support)',
-                ),
-                _buildSection(
-                  context,
-                  appColors,
-                  'HOW WE USE DATA',
-                  '• Provide and secure account access\n'
-                      '• Improve app stability and performance\n'
-                      '• Personalize features based on subscription status',
-                ),
-                _buildSection(
-                  context,
-                  appColors,
-                  'DATA SOURCES',
-                  'The app displays public records from government sources in Putnam '
-                      'County, Florida. We aggregate and present this data but do not '
-                      'create or modify the underlying public records.',
-                ),
-                _buildSection(
-                  context,
-                  appColors,
-                  'MORE DETAILS',
-                  'See the Privacy Policy for full details about data collection, '
-                      'usage, and your rights.',
+                const SizedBox(height: 20),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      "Short answer: not much, and none of it goes anywhere.\n\n"
+                      "This is a personal learning project. The only data tied to "
+                      "you is your account (email + display name) and anything you "
+                      "post in the app, like comments or reviews — all stored in "
+                      "Supabase so the app works between sessions. No analytics SDKs, "
+                      "no ad networks, no selling or sharing.\n\n"
+                      "The bulk of what you see — jail logs, traffic citations, "
+                      "criminal history, the offender registry, agency stats, "
+                      "incidents — is public-record data pulled from Putnam County, "
+                      "Florida sources. The app just collects and displays it; it "
+                      "doesn't change those records and can't vouch for their "
+                      "accuracy or completeness.\n\n"
+                      "If you want anything tied to your account deleted, ask me — I "
+                      "personally know everyone using this.",
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(height: 1.5),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
               ],
@@ -93,39 +77,6 @@ class DataUsageScreen extends ConsumerWidget {
           ),
           const AppFooter(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSection(
-    BuildContext context,
-    AppColors appColors,
-    String title,
-    String content,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: appColors.primaryPurple,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              content,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    height: 1.6,
-                  ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -13,7 +13,6 @@ class SettingsDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appColors = Theme.of(context).extension<AppColors>()!;
     final userProfileAsync = ref.watch(currentUserProfileProvider);
-    final isPremium = ref.watch(isPremiumUserProvider);
 
     return Drawer(
       child: Container(
@@ -55,28 +54,14 @@ class SettingsDrawer extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  Flexible(
-                                    child: Text(
-                                      profile?.displayName ?? 'User',
-                                      style: TextStyle(
-                                        color: appColors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (isPremium) ...<Widget>[
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.star,
-                                      size: 14,
-                                      color: Colors.amber,
-                                    ),
-                                  ],
-                                ],
+                              Text(
+                                profile?.displayName ?? 'User',
+                                style: TextStyle(
+                                  color: appColors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 profile?.email ?? '',
