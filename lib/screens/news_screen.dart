@@ -267,14 +267,9 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                                         errorBuilder:
                                             (context, error, stackTrace) =>
                                                 _newsImagePlaceholder(
-                                          appColors,
-                                          article.categoryDisplay,
-                                        ),
+                                                    appColors),
                                       )
-                                    : _newsImagePlaceholder(
-                                        appColors,
-                                        article.categoryDisplay,
-                                      ),
+                                    : _newsImagePlaceholder(appColors),
                               ),
 
                               // Content
@@ -414,11 +409,12 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 }
 
 /// Fallback "image" for a news card when there's no real og:image —
-/// a slim purple gradient band with a newspaper icon and the category
-/// name, so the card still reads as intentional rather than broken.
-Widget _newsImagePlaceholder(dynamic appColors, String categoryLabel) {
+/// a thin purple gradient strip with just a newspaper icon. Deliberately
+/// no category text: the category already shows in the chip below, and
+/// the strip is here for visual rhythm, not to label anything.
+Widget _newsImagePlaceholder(dynamic appColors) {
   return Container(
-    height: 96,
+    height: 44,
     width: double.infinity,
     decoration: BoxDecoration(
       gradient: LinearGradient(
@@ -426,29 +422,14 @@ Widget _newsImagePlaceholder(dynamic appColors, String categoryLabel) {
           appColors.purpleGradientStart as Color,
           appColors.purpleGradientEnd as Color,
         ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
       ),
     ),
     child: Center(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(Icons.newspaper,
-              color: (appColors.white as Color).withValues(alpha: 0.85),
-              size: 28),
-          const SizedBox(width: 10),
-          Text(
-            categoryLabel.toUpperCase(),
-            style: TextStyle(
-              color: (appColors.white as Color).withValues(alpha: 0.92),
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ],
-      ),
+      child: Icon(Icons.newspaper,
+          color: (appColors.white as Color).withValues(alpha: 0.7),
+          size: 22),
     ),
   );
 }
