@@ -250,22 +250,32 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              // Image (if available)
-                              if (article.hasImage)
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                  child: Image.network(
-                                    article.imageUrl!,
-                                    height: 200,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const SizedBox.shrink();
-                                    },
-                                  ),
+                              // Image — real og:image when we have one,
+                              // otherwise a clean category-colored band.
+                              // (Most Google News RSS items don't expose a
+                              // usable per-article image.)
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(12),
                                 ),
+                                child: article.hasImage
+                                    ? Image.network(
+                                        article.imageUrl!,
+                                        height: 200,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                _newsImagePlaceholder(
+                                          appColors,
+                                          article.categoryDisplay,
+                                        ),
+                                      )
+                                    : _newsImagePlaceholder(
+                                        appColors,
+                                        article.categoryDisplay,
+                                      ),
+                              ),
 
                               // Content
                               Padding(
@@ -401,4 +411,44 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       ),
     );
   }
+}
+
+/// Fallback "image" for a news card when there's no real og:image —
+/// a slim purple gradient band with a newspaper icon and the category
+/// name, so the card still reads as intentional rather than broken.
+Widget _newsImagePlaceholder(dynamic appColors, String categoryLabel) {
+  return Container(
+    height: 96,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: <Color>[
+          appColors.purpleGradientStart as Color,
+          appColors.purpleGradientEnd as Color,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    child: Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.newspaper,
+              color: (appColors.white as Color).withValues(alpha: 0.85),
+              size: 28),
+          const SizedBox(width: 10),
+          Text(
+            categoryLabel.toUpperCase(),
+            style: TextStyle(
+              color: (appColors.white as Color).withValues(alpha: 0.92),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

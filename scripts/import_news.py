@@ -225,6 +225,25 @@ def dedup_articles(by_tier: Dict[int, List[Dict[str, Any]]]) -> List[Dict[str, A
     return out
 
 
+# Google News RSS article links are opaque redirect tokens
+# (https://news.google.com/rss/articles/CBMi...). Following them with
+# allow_redirects lands on Google's own interstitial page, whose og:image
+# is just the Google News logo (lh3.googleusercontent.com/...). That's
+# useless — every article ends up with the same logo. So: if we end up
+# still on a Google domain, or the og:image we find is Google-hosted,
+# treat it as "no image" rather than storing the logo. Real per-article
+# images would require decoding the CBMi token via Google's batchexecute
+# API (brittle) — left as a future enhancement.
+_GOOGLE_HOSTS = ('news.google.com', 'google.com', 'gstatic.com',
+                 'googleusercontent.com', 'lh3.google', 'lh4.google',
+                 'lh5.google', 'lh6.google')
+
+
+def _is_google_hosted(u: str) -> bool:
+    lu = u.lower()
+    return any(h in lu for h in _GOOGLE_HOSTS)
+
+
 def fetch_og_image(url: str, timeout: int = IMAGE_TIMEOUT_SEC) -> Optional[str]:
     try:
         resp = requests.get(
@@ -233,11 +252,18 @@ def fetch_og_image(url: str, timeout: int = IMAGE_TIMEOUT_SEC) -> Optional[str]:
         )
         if resp.status_code != 200 or 'html' not in resp.headers.get('content-type', ''):
             return None
+        # If we never left Google's domain, the page is the interstitial —
+        # don't bother scraping its og:image.
+        if _is_google_hosted(str(resp.url)):
+            return None
         soup = BeautifulSoup(resp.content, 'html.parser')
         for prop in ('og:image', 'twitter:image', 'og:image:secure_url'):
             tag = soup.find('meta', attrs={'property': prop}) or soup.find('meta', attrs={'name': prop})
             if tag and tag.get('content'):
-                return tag['content'].strip()
+                candidate = tag['content'].strip()
+                if candidate and not _is_google_hosted(candidate):
+                    return candidate
+                return None
     except Exception:
         return None
     return None
