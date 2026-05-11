@@ -16,7 +16,9 @@ SET search_path = public
 AS $$
 DECLARE
   v_now        timestamptz := now();
-  v_start_date date        := make_date(EXTRACT(YEAR FROM now())::int - 4, 1, 1);
+  -- Floor for the aggregation window. Hardcoded so it's easy to push back
+  -- as historical years get backfilled. Move this back as we add more years.
+  v_start_date date        := DATE '2018-01-01';
   agency       record;
 BEGIN
   TRUNCATE TABLE public.agency_stats RESTART IDENTITY;
