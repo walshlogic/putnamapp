@@ -16,9 +16,27 @@ SET search_path = public
 AS $$
 DECLARE
   v_now        timestamptz := now();
-  -- Floor for the aggregation window. Hardcoded so it's easy to push back
-  -- as historical years get backfilled. Move this back as we add more years.
-  v_start_date date        := DATE '2018-01-01';
+  -- Floor for the aggregation window. Dynamic: earliest year that has at
+  -- least 2,000 bookings (filters out stray bad-date rows — a stray "1984"
+  -- entry with one row can't shift the window). As historical years get
+  -- backfilled and cross the threshold, this picks them up automatically.
+  -- Falls back to 2018-01-01 if no year qualifies (shouldn't happen with
+  -- real data). Adjust the threshold below if PCSO's annual volume changes.
+  v_start_date date        := COALESCE(
+    (
+      SELECT make_date(yr, 1, 1)
+      FROM (
+        SELECT EXTRACT(YEAR FROM booking_date)::int AS yr
+        FROM public.bookings
+        WHERE booking_date IS NOT NULL
+        GROUP BY yr
+        HAVING count(*) >= 2000   -- threshold: real year cutoff
+        ORDER BY yr ASC
+        LIMIT 1
+      ) earliest_qualifying_year
+    ),
+    DATE '2018-01-01'
+  );
   agency       record;
 BEGIN
   TRUNCATE TABLE public.agency_stats RESTART IDENTITY;
