@@ -3,7 +3,7 @@ description: "Putnam App - Your local news, traffic citations, bookings, and mor
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.1+28
+version: 1.0.1+29
 
 environment:
   sdk: ^3.9.2
